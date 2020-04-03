@@ -184,8 +184,17 @@ class EcoObject:
     def get_breed(self, obj: EcoObject) -> List[EcoObject]:
         pass
 
-    def act_on(self, object_list: List[EcoObject], engine: Engine):
+    def act_on(self, object_list: List[EcoObject], engine: Engine) -> NoReturn:
         pass
+
+    def __eq__(self, other) -> bool:
+        if other is EcoObject:
+            return self.get_name().__eq__(other.get_name()) and self.get_x() == other.get_x() and self.get_y() == other.get_y()
+        else:
+            return False
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
 
 
 class EcoMap:
@@ -811,10 +820,16 @@ class UIDisplay:
     def __init__(self, eco_map: EcoMap):
         self._eco_map = eco_map
 
+    def get_eco_map(self) -> EcoMap:
+        return self._eco_map
+
     def display(self) -> NoReturn:
         pass
 
     def update_display(self) -> NoReturn:
+        pass
+
+    def init(self):
         pass
 
 
@@ -876,20 +891,7 @@ class Plant(EcoObject):
                           speed_max: int,
                           can_breed_on_self: bool,
                           sight: int) -> Plant:
-        return Plant(start_life,
-                     start_energy,
-                     max_life,
-                     max_energy,
-                     display,
-                     x,
-                     y,
-                     dist,
-                     descendant_count_min,
-                     descendant_count_max,
-                     speed,
-                     speed_max,
-                     can_breed_on_self,
-                     sight)
+        pass
 
     def get_breed(self, obj: Plant) -> List[Plant]:
         res = []
@@ -956,7 +958,7 @@ class Plant(EcoObject):
     def get_name(self) -> str:
         pass
 
-    def act_on(self, object_list: List[EcoObject], engine: Engine):
+    def act_on(self, object_list: List[EcoObject], engine: Engine) -> NoReturn:
         pass
 
     def update(self):
@@ -1113,6 +1115,6 @@ class Animal(EcoObject):
         else:
             return False
 
-    def act_on(self, object_list: List[EcoObject], engine: Engine):
+    def act_on(self, object_list: List[EcoObject], engine: Engine) -> NoReturn:
         pass
 
