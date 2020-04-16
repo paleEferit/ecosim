@@ -95,6 +95,8 @@ class Grass(Plant):
                     engine.breed(self, candidate)
                 else:
                     engine.breed(self, self)
+        else:
+            self.alter_speed(-1)
 
 
 class Rabbit(Animal):
@@ -205,6 +207,14 @@ class Rabbit(Animal):
         # reseting target
         if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (self.get_y() == self.get_target_y()):
             self.reset_target()
+        if len(object_list) == 0:
+            x_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
+            y_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
+            if x_v == 0 and y_v ==0:
+                x_v = self.get_dist()
+                y_v = - self.get_dist()
+            self.set_target(x_v, y_v)
+
         # making lists
         acceptable: List[EcoObject] = []
         eaters: List[Animal] = []
@@ -385,6 +395,10 @@ class Wolf(Animal):
             if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
                     self.get_y() == self.get_target_y()):
                 self.reset_target()
+            if len(object_list) == 0:
+                x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+                y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+                self.set_target(x_v, y_v)
             # making lists
             acceptable: List[EcoObject] = []
             eaters: List[Animal] = []
@@ -565,6 +579,10 @@ class Bear(Animal):
             if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
                     self.get_y() == self.get_target_y()):
                 self.reset_target()
+            if len(object_list) == 0:
+                x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+                y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+                self.set_target(x_v, y_v)
             # making lists
             acceptable: List[EcoObject] = []
             eaters: List[Animal] = []

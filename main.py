@@ -1,16 +1,24 @@
 from ecosim_entities import *
 from ui_implementations import *
 from creatures import *
+from forms import *
+import time
 
 # start creating objects
 delay = 1
 
-width = 50
-height = 50
+width = 40
+height = 30
 grass_count = 10
 rabbit_count = 10
 wolf_count = 10
 bear_count = 10
+grass_spread = 10
+rabbit_spread = 10
+wolf_spread = 10
+bear_spread = 10
+resolution_width = 800
+resolution_height = 600
 
 grass_x = width//2
 grass_y = height//2
@@ -45,20 +53,30 @@ for i in range(bear_count):
 print('Eco entities ready...')
 
 the_map: EcoMap = EcoMap(width, height, [], -1, '.', None)
-the_map.add_multiple_objects_around(grass_x, grass_y, grass)
-the_map.add_multiple_objects_around(rabbit_x, rabbit_y, rabbits)
-the_map.add_multiple_objects_around(wolf_x, wolf_y, wolfs)
-the_map.add_multiple_objects_around(bear_x, bear_y, bears)
+the_map.add_multiple_objects_around(grass_x, grass_y, grass_spread, grass)
+the_map.add_multiple_objects_around(rabbit_x, rabbit_y, rabbit_spread, rabbits)
+the_map.add_multiple_objects_around(wolf_x, wolf_y, wolf_spread, wolfs)
+the_map.add_multiple_objects_around(bear_x, bear_y, bear_spread, bears)
 print('Map is ready...')
-ui_module: UIDisplay = GraphicPrintUI(the_map, 800, 600, 'Ecology simulator', '.')
+print('Initing UI...')
+root = tk.Tk()
+app = VisualApp(engine=None, ui_dis=None, canvas_width=resolution_width, canvas_height=resolution_height, master=root)
+ui_module: UIDisplay = GraphicPrintUI(the_map, resolution_width, resolution_height, app.get_sp_canvas(),
+                                      (255, 255, 255),
+                                      (0, 0, 0))
 print('UI is ready...')
 print('Starting UI...')
 ui_module.display()
 print('Creating engine...')
 engine: Engine = Engine(the_map)
 print('Engine is ready...')
-print('Starting engine...')
-while True:
-    engine.full_turn()
-    ui_module.update_display()
-    time.sleep(delay)
+print('Starting app...')
+for i in range(10, 0, -1):
+    print("Waiting %i" % i)
+    time.sleep(1)
+
+# main loop
+app.set_ui(ui_module)
+app.set_engine(engine)
+app.mainloop()
+

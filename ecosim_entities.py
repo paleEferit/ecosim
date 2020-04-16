@@ -60,7 +60,7 @@ class EcoObject:
                  sight: int):
         if speed < 0 or speed_max < 1:
             raise ValueError('speed should be 0 or higher, max speed should be 1 or higher')
-        if speed >= speed_max:
+        if speed > speed_max:
             raise ValueError('speed can not be above speed_max')
         if start_life < 0:
             raise ValueError('too low life')
@@ -242,7 +242,7 @@ class EcoMap:
             res_id = self._free_ids[0]
             del self._free_ids[0]
         else:
-            key_list = self._object_dict.keys()
+            key_list = list(self._object_dict.keys())
             if len(key_list) == 0:
                 res_id = self.get_empty_id() + 1
             else:
@@ -415,16 +415,16 @@ class EcoMap:
     def get_objects_in_zone(self, start_x: int, start_y: int, end_x: int, end_y: int) -> List[EcoObject]:
         res: List[EcoObject] = []
         if self.has_point_inside(start_x, start_y) and self.has_point_inside(end_x, end_y):
-            min_x = min(start_x, end_x)
-            max_x = max(start_x, end_x)
-            min_y = min(start_y, end_y)
+            min_x = max(min(start_x, end_x), 0)
+            max_x = min(max(start_x, end_x), self.get_width()-1)
+            min_y = min(max(min(start_y, end_y), 0), self.get_height()-1)
             max_y = max(start_y, end_y)
             for i in range(min_y, max_y + 1, 1):
                 for j in range(min_x, max_x + 1, 1):
                     key_val = self._object_map[i][j]
                     if key_val != self.get_empty_id():
                         res.append(self.get_obj_by_id(key_val))
-            return res
+        return res
 
     def update_positions(self) -> NoReturn:
         for i in range(self.get_height()):
@@ -830,6 +830,9 @@ class UIDisplay:
         pass
 
     def init(self):
+        pass
+
+    def clear_all(self) -> NoReturn:
         pass
 
 
