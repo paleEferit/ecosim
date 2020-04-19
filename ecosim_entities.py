@@ -38,10 +38,37 @@ class EcoObject:
         return 2
 
     @staticmethod
+    def get_min_possible_life() -> int:
+        return 10
+
+    @staticmethod
+    def get_min_possible_jump_distance() -> int:
+        return 2
+
+    @staticmethod
+    def get_min_possible_energy() -> int:
+        return 10
+
+    @staticmethod
+    def get_min_possible_sight() -> int:
+        return 3
+
+    @staticmethod
+    def get_min_possible_descendants() -> int:
+        return 1
+
+    @staticmethod
+    def get_min_possible_speed() -> int:
+        return 1
+
+    @staticmethod
     def calc_mutation(base_value: int, mutation_range: int, min_value: int, max_value: int) -> int:
         min_plank = max(min_value, base_value - mutation_range)
         max_plank = min(max_value, base_value + mutation_range)
         return random.randint(min_plank, max_plank)
+
+    def _dist_sqr(self, obj: EcoObject) -> int:
+        return (self.get_x() - obj.get_x())**2 + (self.get_y() - self.get_y())**2
 
     def __init__(self,
                  start_life: int,
@@ -188,13 +215,40 @@ class EcoObject:
         pass
 
     def __eq__(self, other) -> bool:
-        if other is EcoObject:
-            return self.get_name().__eq__(other.get_name()) and self.get_x() == other.get_x() and self.get_y() == other.get_y()
+        if isinstance(other, EcoObject):
+            my_name = self.get_name()
+            my_x = self.get_x()
+            my_y = self.get_y()
+            my_life = self.get_life_value()
+            my_max_life = self.get_max_life()
+            my_jump = self.get_dist()
+            my_max_speed = self.get_speed_max()
+            my_speed = self.get_speed()
+            my_energy = self.get_energy_value()
+            my_max_energy = self.get_max_energy()
+            my_min_offsprings = self.get_descendant_count_min()
+            my_max_offspreings = self.get_descendant_count_max()
+
+            other_name = other.get_name()
+            other_x = other.get_x()
+            other_y = other.get_y()
+            other_life = other.get_life_value()
+            other_max_life = other.get_max_life()
+            other_jump = other.get_dist()
+            other_max_speed = other.get_speed_max()
+            other_speed = other.get_speed()
+            other_energy = other.get_energy_value()
+            other_max_energy = other.get_max_energy()
+            other_min_offsprings = other.get_descendant_count_min()
+            other_max_offspreings = other.get_descendant_count_max()
+
+            return (my_name.__eq__(other_name)) and (my_x == other_x) and (my_y == other_y) and (my_life == other_life) and (my_max_life == other_max_life) and (my_jump == other_jump) and (my_max_speed == other_max_speed) and (my_speed == other_speed) and (my_energy == other_energy) and (my_max_energy == other_max_energy) and (my_min_offsprings == other_min_offsprings) and (my_max_offspreings == other_max_offspreings)
         else:
             return False
 
     def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
+        res = not self.__eq__(other)
+        return res
 
 
 class EcoMap:
@@ -325,7 +379,9 @@ class EcoMap:
         return self.get_empty_id()
 
     def has_object_at(self, x_pos: int, y_pos: int) -> bool:
-        return self.get_empty_id() != self._object_map[y_pos][x_pos]
+        tmp_id = self._object_map[y_pos][x_pos]
+        empty_id = self.get_empty_id()
+        return empty_id != tmp_id
 
     def _replace_id_on_map(self, target_id: int, new_id: int) -> int:
         count = 0
@@ -407,7 +463,7 @@ class EcoMap:
                     self._object_map[i][j] = self.get_empty_id()
             for k in self._object_dict:
                 tmp_obj = self._object_dict[k]
-                if (tmp_obj.get_x( )>= min_x) and (tmp_obj.get_x() <= max_x) and (tmp_obj.get_y() >= min_y) and (tmp_obj.get_y() <= max_y):
+                if (tmp_obj.get_x()>= min_x) and (tmp_obj.get_x() <= max_x) and (tmp_obj.get_y() >= min_y) and (tmp_obj.get_y() <= max_y):
                     self._object_map[tmp_obj.get_y()][tmp_obj.get_x()] = k
         else:
             raise ValueError('insufficient position values')
@@ -452,7 +508,7 @@ class EcoMap:
         lst_select: List[int] = list(range(x_len * y_len))
         for i in range(y_len):
             for j in range(x_len):
-                if self.has_object_at(j, i):
+                if self.has_object_at(min_x + j, min_y + i):
                     lst_select.remove(x_len * i + j)
         if total < obj_count:
             return False
@@ -460,8 +516,8 @@ class EcoMap:
             index = 0
             samples = random.sample(lst_select, obj_count)
             for s in samples:
-                s_x = s // x_len
-                s_y = s % x_len
+                s_x = min_x + s % x_len
+                s_y = min_y + s // x_len
                 tmp_obj = self.get_obj_by_id(keys[index])
                 tmp_x = tmp_obj.get_x()
                 tmp_y = tmp_obj.get_y()
@@ -470,6 +526,7 @@ class EcoMap:
             return True
 
     def add_multiple_objects_around(self, pos_x: int, pos_y: int, spread: int, objects: List[EcoObject]) -> bool:
+        # todo it doesn't place points right, consider minimum pos
         min_x = max(0, pos_x - spread)
         max_x = min(pos_x + spread, self.get_width() - 1)
         min_y = max(0, pos_y - spread)
@@ -481,7 +538,7 @@ class EcoMap:
         lst_select: List[int] = list(range(x_len*y_len))
         for i in range(y_len):
             for j in range(x_len):
-                if self.has_object_at(j, i):
+                if self.has_object_at(min_x + j, min_y + i):
                     lst_select.remove(x_len*i + j)
         if total < obj_count:
             return False
@@ -489,8 +546,8 @@ class EcoMap:
             index = 0
             samples = random.sample(lst_select, obj_count)
             for s in samples:
-                s_x = s // x_len
-                s_y = s % x_len
+                s_x = min_x + s % x_len
+                s_y = min_y + s // x_len
                 self.add_obj_to_pos(objects[index], s_x, s_y)
                 index += 1
             return True
@@ -514,16 +571,16 @@ class EcoMap:
         res: List[Animal] = []
         for k in self._object_dict:
             obj = self._object_dict[k]
-            if obj is Animal:
-                res.append((Animal)(obj))
+            if isinstance(obj, Animal):
+                res.append(obj)
         return res
 
     def get_all_plants(self) -> List[Plant]:
         res: List[Plant] = []
         for k in self._object_dict:
             obj = self._object_dict[k]
-            if obj is Animal:
-                res.append((Plant)(obj))
+            if isinstance(obj, Plant):
+                res.append(obj)
         return res
 
     def get_all_obj_keys(self) -> List[int]:
@@ -533,7 +590,7 @@ class EcoMap:
         res: List[int] = []
         for k in self._object_dict:
             obj = self._object_dict[k]
-            if obj is Animal:
+            if isinstance(obj, Animal):
                 res.append(k)
         return res
 
@@ -541,7 +598,7 @@ class EcoMap:
         res: List[int] = []
         for k in self._object_dict:
             obj = self._object_dict[k]
-            if obj is Plant:
+            if isinstance(obj, Plant):
                 res.append(k)
         return res
 
@@ -562,6 +619,18 @@ class Engine:
     def get_eco_map(self) -> EcoMap:
         return self._eco_map
 
+    def get_min_x(self) -> int:
+        return 0
+
+    def get_min_y(self) -> int:
+        return 0
+
+    def get_max_x(self) -> int:
+        return self.get_eco_map().get_width() - 1
+
+    def get_max_y(self) -> int:
+        return self.get_eco_map().get_height() - 1
+
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         equality: bool = (parent_1.get_x() == parent_2.get_x()) and (parent_1.get_y() == parent_2.get_y())
         species: bool = parent_1.get_name().__eq__(parent_2.get_name())
@@ -569,9 +638,9 @@ class Engine:
         diff_pos = (parent_1.get_x() - parent_2.get_x())**2 + (parent_1.get_y() - parent_2.get_y())**2
         close_enough = diff_pos <= Engine.get_breed_range()**2
         gender = True
-        if (parent_1 is Animal) and (parent_2 is Animal):
-            an1 = (Animal)(parent_1)
-            an2 = (Animal)(parent_2)
+        if isinstance(parent_1, Animal) and isinstance(parent_2, Animal):
+            an1 = parent_1
+            an2 = parent_2
             gender = an1.get_gender() != an2.get_gender()
         return ((not equality) or (parent_1.get_can_breed_on_self() and parent_2.get_can_breed_on_self())) and species and p_breed and close_enough and gender
 
@@ -582,14 +651,14 @@ class Engine:
         if (x_diff <= 1) and (y_diff <= 1):
             point_x = food.get_x()
             point_y = food.get_y()
-            the_map  = self.get_eco_map()
+            the_map = self.get_eco_map()
             if obj.can_eat(food):
-                if food is Animal:
-                    tmp_animal = (Animal)(food)
+                if isinstance(food, Animal):
+                    tmp_animal = food
                     nx_1 = max(point_x - Engine.get_failed_str_spread(), 0)
-                    nx_2 = min(point_x + Engine.get_failed_str_spread(), the_map.get_width() -1)
+                    nx_2 = min(point_x + Engine.get_failed_str_spread(), the_map.get_width() - 1)
                     ny_1 = max(point_y - Engine.get_failed_str_spread(), 0)
-                    ny_2 = min(point_y + Engine.get_failed_str_spread(), the_map.get_height() -1)
+                    ny_2 = min(point_y + Engine.get_failed_str_spread(), the_map.get_height() - 1)
                     res = (obj.get_strength() > tmp_animal.get_strength()) or the_map.has_free_space(nx_1, ny_1, nx_2, ny_2)
                 else:
                     res = True
@@ -610,7 +679,9 @@ class Engine:
         elif y_dir < 0:
             point_y -= 1
         the_map = self.get_eco_map()
-        free_flag = the_map.has_point_inside(point_x, point_y) and not the_map.has_object_at(point_x, point_y)
+        point_inside_flag = the_map.has_point_inside(point_x, point_y)
+        free_space_flag = not the_map.has_object_at(point_x, point_y)
+        free_flag = point_inside_flag and free_space_flag
         return free_flag
 
     def can_jump(self, obj: Animal, x_dir: int, y_dir: int) -> bool:
@@ -618,15 +689,15 @@ class Engine:
             raise ValueError('no jump data')
         point_x = obj.get_x() + x_dir
         point_y = obj.get_y() + y_dir
-        range_flag = obj.get_dist() >= round(math.sqrt((point_x - obj.get_x())**2 + (point_y - obj.get_y())**2))
+        range_flag = obj.get_dist() >= round(math.sqrt(x_dir**2 + y_dir**2))
         the_map = self.get_eco_map()
         pos_flag = the_map.has_point_inside(point_x, point_y)
         obj_flag = not the_map.has_object_at(point_x, point_y)
         if not obj_flag:
             tmp_obj = the_map.get_obj_by_pos(point_x, point_y)
             if obj.can_eat(tmp_obj):
-                if tmp_obj is Animal:
-                    tmp_animal = (Animal)(tmp_obj)
+                if isinstance(tmp_obj, Animal):
+                    tmp_animal = tmp_obj
                     nx_1 = max(point_x - Engine.get_failed_str_spread(), 0)
                     nx_2 = min(point_x + Engine.get_failed_str_spread(), the_map.get_width() -1)
                     ny_1 = max(point_y - Engine.get_failed_str_spread(), 0)
@@ -652,7 +723,6 @@ class Engine:
                 point_y -= 1
             the_map = self.get_eco_map()
             the_map.move_object(pre_x, pre_y, point_x, point_y)
-            obj.alter_speed(-1)
             return True
         else:
             return False
@@ -667,13 +737,13 @@ class Engine:
             if cur_map.has_object_at(point_x, point_y):
                 food = cur_map.get_obj_by_pos(point_x, point_y)
                 # food type
-                if food is Plant:
+                if isinstance(food, Plant):
                     obj.eat(food)
                     obj.alter_energy(- obj.get_dist())
                     cur_map.remove_obj_by_pos(point_x, point_y)
                     cur_map.move_object(pre_x, pre_y, point_x, point_y)
                 else:
-                    animal_food = (Animal)(food)
+                    animal_food = food
                     food_strength = animal_food.get_strength()
                     obj_strength = obj.get_strength()
                     delta = abs(obj_strength - food_strength)
@@ -692,7 +762,8 @@ class Engine:
                         obj.eat(animal_food)
                         cur_map.remove_obj_by_pos(point_x, point_y)
                         cur_map.move_object(pre_x, pre_y, point_x, point_y)
-            obj.alter_speed(-1)
+            else:
+                cur_map.move_object(pre_x, pre_y, point_x, point_y)
             return True
         else:
             return False
@@ -705,13 +776,13 @@ class Engine:
             point_y = prey_obj.get_y()
             cur_map = self.get_eco_map()
             # food type
-            if prey_obj is Plant:
+            if isinstance(prey_obj, Plant):
                 eater_obj.eat(prey_obj)
                 eater_obj.alter_energy(- eater_obj.get_dist())
                 cur_map.remove_obj_by_pos(point_x, point_y)
                 cur_map.move_object(pre_x, pre_y, point_x, point_y)
             else:
-                animal_food = (Animal)(prey_obj)
+                animal_food = prey_obj
                 food_strength = animal_food.get_strength()
                 obj_strength = eater_obj.get_strength()
                 delta = abs(obj_strength - food_strength)
@@ -729,7 +800,6 @@ class Engine:
                     cur_map.remove_obj_by_pos(point_x, point_y)
                     cur_map.move_object(pre_x, pre_y, point_x, point_y)
 
-            eater_obj.alter_speed(-1)
             return True
         else:
             return False
@@ -752,19 +822,19 @@ class Engine:
                 x_max = x_pos + start_spread
                 y_min = y_pos - start_spread
                 y_max = y_pos + start_spread
-            the_map.add_multiple_objects_around(x_pos, y_pos, start_spread, offsprings)
+            return the_map.add_multiple_objects_around(x_pos, y_pos, start_spread, offsprings)
 
     def breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         if self.can_breed(parent_1, parent_2):
             x_pos = parent_1.get_x()
             y_pos = parent_1.get_y()
             offsprings: List[EcoObject] = []
-            if parent_1 is Plant:
+            if isinstance(parent_1, Plant):
                 offsprings.extend(parent_1.get_breed(parent_2))
 
-            elif(parent_1 is Animal) and (parent_2 is Animal):
-                an1 = (Animal)(parent_1)
-                an2 = (Animal)(parent_2)
+            elif isinstance(parent_1, Animal) and isinstance(parent_2, Animal):
+                an1 = parent_1
+                an2 = parent_2
                 if an2.get_gender() == Gender.FEMALE:
                     offsprings.extend(an2.get_breed(an1))
                     x_pos = parent_2.get_x()
@@ -912,12 +982,18 @@ class Plant(EcoObject):
                 sight_val: int = min(
                     round((self.get_sight() + obj.get_sight()) / 2) + random.randint(mutation_min, mutation_max),
                     sight_limit)
+                sight_val = max(EcoObject.get_min_possible_sight(), sight_val)
+
                 descendants_min_val: int = min(
                     round((self.get_descendant_count_min() + obj.get_descendant_count_min()) / 2) + random.randint(
                         mutation_min, mutation_max), descendants_limit)
+                descendants_min_val = max(EcoObject.get_min_possible_descendants(), descendants_min_val)
+
                 descendants_max_val: int = min(
                     round((self.get_descendant_count_max() + obj.get_descendant_count_max()) / 2) + random.randint(
                         mutation_min, mutation_max), descendants_limit)
+                descendants_max_val = max(EcoObject.get_min_possible_descendants(), descendants_max_val)
+
                 if descendants_min_val > descendants_max_val:
                     tmp_val = descendants_max_val
                     descendants_max_val = descendants_min_val
@@ -926,22 +1002,30 @@ class Plant(EcoObject):
                     round((self.get_max_energy() + obj.get_max_energy()) / 2) + random.randint(mutation_min,
                                                                                                mutation_max),
                     energy_limit)
+                energy_max_val = max(EcoObject.get_min_possible_energy(), energy_max_val)
+
                 speed_val: int = min(
                     round((self.get_speed_max() + obj.get_speed_max()) / 2) + random.randint(mutation_min,
                                                                                              mutation_max), speed_limit)
+                speed_val = max(EcoObject.get_min_possible_speed(), speed_val)
+
                 life_max_val: int = min(
                     round((self.get_max_life() + obj.get_max_life()) / 2) + random.randint(mutation_min, mutation_max),
                     life_limit)
+                life_max_val = max(EcoObject.get_min_possible_life(), life_max_val)
+
                 dist_val: int = min(
                     round((self.get_dist() + obj.get_dist()) / 2) + random.randint(mutation_min, mutation_max),
                     dist_limit)
+                dist_val = max(EcoObject.get_min_possible_jump_distance(), dist_val)
+
                 start_life_val = life_max_val
                 can_breed_on_self_val = self.get_can_breed_on_self()
                 start_energy_val = energy_max_val // 2 + 2
                 display_val = self.get_display()
                 x_val = self.get_x()
                 y_val = self.get_y()
-                offspring = self.create_descendant(life_max_val,
+                offspring = self.create_descendant(start_life_val,
                                                    start_energy_val,
                                                    life_max_val,
                                                    energy_max_val,
@@ -951,7 +1035,7 @@ class Plant(EcoObject):
                                                    dist_val,
                                                    descendants_min_val,
                                                    descendants_max_val,
-                                                   speed_val,
+                                                   0,
                                                    speed_val,
                                                    can_breed_on_self_val,
                                                    sight_val)
@@ -973,6 +1057,10 @@ class Animal(EcoObject):
     @staticmethod
     def get_max_possible_strength() -> int:
         return 20
+
+    @staticmethod
+    def get_min_possible_strength() -> int:
+        return 1
 
     def __init__(self,
                  start_life: int,
@@ -1008,6 +1096,31 @@ class Animal(EcoObject):
                            sight)
         self._strength = strength
         self._gender = gender
+        self._target_x = -1
+        self._target_y = -1
+
+    def is_target_set(self) -> bool:
+        return self._target_x >= 0 and self._target_y >= 0
+
+    def reset_target(self):
+        self.set_target_x(-1)
+        self.set_target_y(-1)
+
+    def get_target_x(self) -> int:
+        return self._target_x
+
+    def get_target_y(self) -> int:
+        return self._target_y
+
+    def set_target_x(self, val: int) -> NoReturn:
+        self._target_x = val
+
+    def set_target_y(self, val: int) -> NoReturn:
+        self._target_y = val
+
+    def set_target(self, x: int, y: int) -> NoReturn:
+        self.set_target_x(x)
+        self.set_target_y(y)
 
     def create_descendant(self,
                           start_life: int,
@@ -1061,18 +1174,36 @@ class Animal(EcoObject):
             breed_count = random.randint(self.get_descendant_count_min(), self.get_descendant_count_max())
             for i in range(breed_count):
                 sight_val: int = min(round((self.get_sight()+obj.get_sight())/2) + random.randint(mutation_min, mutation_max), sight_limit)
+                sight_val = max(sight_val, EcoObject.get_min_possible_sight())
+
                 descendants_min_val: int = min(round((self.get_descendant_count_min() + obj.get_descendant_count_min())/2) + random.randint(mutation_min, mutation_max), descendants_limit)
+                descendants_min_val = max(descendants_min_val, EcoObject.get_min_possible_descendants())
+
                 descendants_max_val: int = min(round((self.get_descendant_count_max() + obj.get_descendant_count_max())/2) + random.randint(mutation_min, mutation_max), descendants_limit)
+                descendants_max_val = max(descendants_max_val, EcoObject.get_min_possible_descendants())
+
                 if descendants_min_val > descendants_max_val:
                     tmp_val = descendants_max_val
                     descendants_max_val = descendants_min_val
                     descendants_min_val = tmp_val
+
                 strength_val: int = min(round((self.get_strength()+obj.get_strength())/2) + random.randint(mutation_min, mutation_max), strength_limit)
+                strength_val = max(strength_val, Animal.get_min_possible_strength())
+
                 energy_max_val: int = min(round((self.get_max_energy()+obj.get_max_energy())/2) + random.randint(mutation_min, mutation_max), energy_limit)
+                energy_max_val = max(energy_max_val, EcoObject.get_min_possible_energy())
+
                 speed_val: int = min(round((self.get_speed_max()+obj.get_speed_max())/2) + random.randint(mutation_min, mutation_max), speed_limit)
+                speed_val = max(speed_val, EcoObject.get_min_possible_speed())
+
                 life_max_val: int = min(round((self.get_max_life()+obj.get_max_life())/2) + random.randint(mutation_min, mutation_max), life_limit)
+                life_max_val = max(life_max_val, EcoObject.get_min_possible_life())
+
                 dist_val: int = min(round((self.get_dist()+obj.get_dist())/2) + random.randint(mutation_min, mutation_max), dist_limit)
+                dist_val = max(dist_val, EcoObject.get_min_possible_jump_distance())
+
                 start_life_val = life_max_val
+
                 can_breed_on_self_val = self.get_can_breed_on_self()
                 start_energy_val = energy_max_val // 2 + 2
                 display_val = self.get_display()
@@ -1082,7 +1213,7 @@ class Animal(EcoObject):
                 tmp_selector = random.randint(1, 2)
                 if tmp_selector == 1:
                     gender_val = Gender.MALE
-                offspring = self.create_descendant(life_max_val,
+                offspring = self.create_descendant(start_life_val,
                                                    start_energy_val,
                                                    life_max_val,
                                                    energy_max_val,
@@ -1092,7 +1223,7 @@ class Animal(EcoObject):
                                                    dist_val,
                                                    descendants_min_val,
                                                    descendants_max_val,
-                                                   speed_val,
+                                                   0,
                                                    speed_val,
                                                    can_breed_on_self_val,
                                                    sight_val,
