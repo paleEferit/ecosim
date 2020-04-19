@@ -620,7 +620,11 @@ class Bear(Animal):
         for eo in object_list:
             if eo.__ne__(self):
                 if eo.get_name().__eq__(self.get_name()) and eo.can_breed():
-                    acceptable.append(eo)
+                    if isinstance(eo, Animal) and isinstance(self, Animal):
+                        if eo.get_gender() != self.get_gender():
+                            acceptable.append(eo)
+                    else:
+                        acceptable.append(eo)
                 if isinstance(eo, Animal):
                     tmp = eo
                     if (tmp.can_eat(self)) and (self.get_strength() < tmp.get_strength()):
@@ -655,7 +659,8 @@ class Bear(Animal):
             self.set_target(target_x, target_y)
         #  feed sequence
         # todo fix case of no mates while can breed and food is present
-        if not self.can_breed() and not self.is_target_set() and len(food) > 0:
+        # todo make eating possible for being right next to target
+        if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -670,6 +675,7 @@ class Bear(Animal):
                     min_food_distance = distance
                     min_distance_candidate = f
             candidate: EcoObject = max_energy_candidate
+            # todo comprehand min_food_dist zero
             ratio = self._dist_sqr(max_energy_candidate) / min_food_distance
             if ratio >= 4:
                 candidate = min_distance_candidate
@@ -679,35 +685,37 @@ class Bear(Animal):
             self.set_target(target_x, target_y)
 
         # breed sequence
-        if self.can_breed() and not self.is_target_set():
+        if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
             for a in acceptable:
                 if (self._dist_sqr(a) <= breed_range ** 2) and (engine.can_breed(self, a)):
                     real_candidates.append(a)
-            # todo: fix breeding for zero mate case (index error too)
-            max_energy = real_candidates[0].get_energy_value()
-            candidate = real_candidates[0]
-            if isinstance(self, Plant):
-                if len(real_candidates) > 0:
-                    for c in real_candidates:
+            if len(real_candidates) > 0:
+                # todo: fix breeding for zero mate case (index error too)
+                max_energy = real_candidates[0].get_energy_value()
+                candidate = real_candidates[0]
+                if isinstance(self, Plant):
+                    if len(real_candidates) > 0:
+                        for c in real_candidates:
+                            if c.get_energy_value() > max_energy:
+                                max_energy = c.get_energy_value()
+                                candidate = c
+                        engine.breed(self, candidate)
+                    else:
+                        engine.breed(self, self)
+                elif isinstance(self, Animal):
+                    for c in acceptable:
                         if c.get_energy_value() > max_energy:
                             max_energy = c.get_energy_value()
                             candidate = c
-                    engine.breed(self, candidate)
-                else:
-                    engine.breed(self, self)
-            elif isinstance(self, Animal):
-                for c in acceptable:
-                    if c.get_energy_value() > max_energy:
-                        max_energy = c.get_energy_value()
-                        candidate = c
-                if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
-                    engine.breed(self, candidate)
-                else:
-                    self.set_target(candidate.get_x(), candidate.get_y())
+                    if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
+                        engine.breed(self, candidate)
+                    else:
+                        self.set_target(candidate.get_x(), candidate.get_y())
 
+        # todo add eating target
         # move sequence
         if self.is_target_set():
             target_x = self.get_target_x()
