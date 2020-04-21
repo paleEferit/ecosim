@@ -50,11 +50,14 @@ class GraphicPrintUI(UIDisplay):
     def _get_sub_width(self) -> int:
         return self._sub_width
 
-    def _create_symbol(self, data: str, x_cell: int, y_cell: int) -> NoReturn:
+    def _create_symbol(self, data: str, x_cell: int, y_cell: int, r: int, g: int, b: int) -> NoReturn:
+        if not GraphicPrintUI._check_color((r, g, b)):
+            raise ValueError('inconsistent color')
         tmp_cnv = self._get_canvas()
+        fill_color = '#%02x%02x%02x' % (r, g, b)
         x_pos = round((x_cell + 0.3)*self._get_sub_width())
         y_pos = round((y_cell + 0.5)*self._get_sub_width())
-        tmp_cnv.create_text(x_pos, y_pos, anchor=tk.W, font=("Purisa", self._get_sub_height()), text=data)
+        tmp_cnv.create_text(x_pos, y_pos, anchor=tk.W, font=("Purisa", self._get_sub_height()), text=data, fill=fill_color)
 
     def clear_all(self) -> NoReturn:
         tmp_cnv = self._get_canvas()
@@ -80,11 +83,18 @@ class GraphicPrintUI(UIDisplay):
             for j in range(w):
                 x_pos = j * self._get_sub_width()
                 y_pos = i * self._get_sub_height()
+                r = 0
+                g = 0
+                b = 0
                 if the_map.has_object_at(j, i):
                     tmp_obj = the_map.get_obj_by_pos(j, i)
-                    self._create_symbol(tmp_obj.get_display(), j, i)
+                    if isinstance(tmp_obj, Animal):
+                        r = 255
+                    if isinstance(tmp_obj, Plant):
+                        g = 255
+                    self._create_symbol(tmp_obj.get_display(), j, i, r, g, b)
                 else:
-                    self._create_symbol(the_map.get_empty_display(), j, i)
+                    self._create_symbol(the_map.get_empty_display(), j, i, r, g, b)
 
     def update_display(self) -> NoReturn:
         self.clear_all()

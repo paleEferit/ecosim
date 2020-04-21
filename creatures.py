@@ -183,19 +183,8 @@ class Rabbit(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        if len(object_list) == 0:
-            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
-            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
-            if x_v == 0 and y_v == 0:
-                x_v = self.get_dist()
-                y_v = - self.get_dist()
-            min_x = engine.get_min_x()
-            max_x = engine.get_max_x()
-            min_y = engine.get_min_y()
-            max_y = engine.get_max_y()
-            target_x = max(min(self.get_x() + x_v, max_x), min_x)
-            target_y = max(min(self.get_y() + y_v, max_y), min_y)
-            self.set_target(target_x, target_y)
+        # todo: make it a check on engine side later
+        action_is_possible_flag: bool = True
 
         # making lists
         acceptable: List[EcoObject] = []
@@ -224,6 +213,7 @@ class Rabbit(Animal):
 
         # run sequence
         if len(eaters) > 0 and not isinstance(self, Plant):
+            action_is_possible_flag = False
             x_start = self.get_x()
             y_start = self.get_y()
             y_vec_sum = 0
@@ -245,6 +235,7 @@ class Rabbit(Animal):
 
         #  feed sequence
         if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
+            action_is_possible_flag = False
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -275,6 +266,7 @@ class Rabbit(Animal):
 
         # breed sequence
         if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
+            action_is_possible_flag = False
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
@@ -302,11 +294,34 @@ class Rabbit(Animal):
                         engine.breed(self, candidate)
                     else:
                         self.set_target(candidate.get_x(), candidate.get_y())
+            else:
+                action_is_possible_flag = True
+
+        # pick random direction just in case there is nothing to do
+        if (len(object_list) == 0) or (action_is_possible_flag and not self.is_target_set()):
+            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            if x_v == 0 and y_v == 0:
+                x_v = self.get_dist()
+                y_v = - self.get_dist()
+            min_x = engine.get_min_x()
+            max_x = engine.get_max_x()
+            min_y = engine.get_min_y()
+            max_y = engine.get_max_y()
+            target_x = max(min(self.get_x() + x_v, max_x), min_x)
+            target_y = max(min(self.get_y() + y_v, max_y), min_y)
+            self.set_target(target_x, target_y)
 
         # move sequence
         if self.is_target_set():
-            target_x = self.get_target_x()
-            target_y = self.get_target_y()
+            # a crutch to fix out of range
+            max_x = engine.get_max_x()
+            min_x = engine.get_min_x()
+            max_y = engine.get_max_y()
+            min_y = engine.get_min_y()
+            target_x = max(min(self.get_target_x(), max_x), min_x)
+            target_y = max(min(self.get_target_y(), max_y), min_y)
+            self.set_target(target_x, target_y)
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
@@ -318,7 +333,7 @@ class Rabbit(Animal):
                 engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
-            else:
+            elif (vector_x != 0) or (vector_y != 0):
                 ratio = self.get_dist() / math.sqrt(vector_x ** 2 + vector_y ** 2)
                 vector_x = math.floor(vector_x * ratio)
                 vector_y = math.floor(vector_y * ratio)
@@ -406,19 +421,8 @@ class Wolf(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        if len(object_list) == 0:
-            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
-            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
-            if x_v == 0 and y_v == 0:
-                x_v = self.get_dist()
-                y_v = - self.get_dist()
-            min_x = engine.get_min_x()
-            max_x = engine.get_max_x()
-            min_y = engine.get_min_y()
-            max_y = engine.get_max_y()
-            target_x = max(min(self.get_x() + x_v, max_x), min_x)
-            target_y = max(min(self.get_y() + y_v, max_y), min_y)
-            self.set_target(target_x, target_y)
+        # todo: make it a check on engine side later
+        action_is_possible_flag: bool = True
 
         # making lists
         acceptable: List[EcoObject] = []
@@ -447,6 +451,7 @@ class Wolf(Animal):
 
         # run sequence
         if len(eaters) > 0 and not isinstance(self, Plant):
+            action_is_possible_flag = False
             x_start = self.get_x()
             y_start = self.get_y()
             y_vec_sum = 0
@@ -468,6 +473,7 @@ class Wolf(Animal):
 
         #  feed sequence
         if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
+            action_is_possible_flag = False
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -498,6 +504,7 @@ class Wolf(Animal):
 
         # breed sequence
         if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
+            action_is_possible_flag = False
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
@@ -525,11 +532,34 @@ class Wolf(Animal):
                         engine.breed(self, candidate)
                     else:
                         self.set_target(candidate.get_x(), candidate.get_y())
+            else:
+                action_is_possible_flag = True
+
+        # pick random direction just in case there is nothing to do
+        if (len(object_list) == 0) or (action_is_possible_flag and not self.is_target_set()):
+            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            if x_v == 0 and y_v == 0:
+                x_v = self.get_dist()
+                y_v = - self.get_dist()
+            min_x = engine.get_min_x()
+            max_x = engine.get_max_x()
+            min_y = engine.get_min_y()
+            max_y = engine.get_max_y()
+            target_x = max(min(self.get_x() + x_v, max_x), min_x)
+            target_y = max(min(self.get_y() + y_v, max_y), min_y)
+            self.set_target(target_x, target_y)
 
         # move sequence
         if self.is_target_set():
-            target_x = self.get_target_x()
-            target_y = self.get_target_y()
+            # a crutch to fix out of range
+            max_x = engine.get_max_x()
+            min_x = engine.get_min_x()
+            max_y = engine.get_max_y()
+            min_y = engine.get_min_y()
+            target_x = max(min(self.get_target_x(), max_x), min_x)
+            target_y = max(min(self.get_target_y(), max_y), min_y)
+            self.set_target(target_x, target_y)
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
@@ -541,7 +571,7 @@ class Wolf(Animal):
                 engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
-            else:
+            elif (vector_x != 0) or (vector_y != 0):
                 ratio = self.get_dist() / math.sqrt(vector_x ** 2 + vector_y ** 2)
                 vector_x = math.floor(vector_x * ratio)
                 vector_y = math.floor(vector_y * ratio)
@@ -622,7 +652,7 @@ class Bear(Animal):
         return 'bear'
 
     def can_eat(self, obj: EcoObject) -> bool:
-        res = not obj.get_name().__eq__(self.get_name())
+        res = (not obj.get_name().__eq__(self.get_name())) or self.get_starving_plank() >= self.get_energy_value()
         return res
 
     def act_on(self, object_list: List[EcoObject], engine: Engine):
@@ -631,19 +661,8 @@ class Bear(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        if len(object_list) == 0:
-            x_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
-            y_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
-            if x_v == 0 and y_v == 0:
-                x_v = self.get_dist()
-                y_v = - self.get_dist()
-            min_x = engine.get_min_x()
-            max_x = engine.get_max_x()
-            min_y = engine.get_min_y()
-            max_y = engine.get_max_y()
-            target_x = max(min(self.get_x() + x_v, max_x), min_x)
-            target_y = max(min(self.get_y() + y_v, max_y), min_y)
-            self.set_target(target_x, target_y)
+        # todo: make it a check on engine side later
+        action_is_possible_flag: bool = True
 
         # making lists
         acceptable: List[EcoObject] = []
@@ -672,6 +691,7 @@ class Bear(Animal):
 
         # run sequence
         if len(eaters) > 0 and not isinstance(self, Plant):
+            action_is_possible_flag = False
             x_start = self.get_x()
             y_start = self.get_y()
             y_vec_sum = 0
@@ -693,6 +713,7 @@ class Bear(Animal):
 
         #  feed sequence
         if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
+            action_is_possible_flag = False
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -723,6 +744,7 @@ class Bear(Animal):
 
         # breed sequence
         if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
+            action_is_possible_flag = False
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
@@ -750,11 +772,34 @@ class Bear(Animal):
                         engine.breed(self, candidate)
                     else:
                         self.set_target(candidate.get_x(), candidate.get_y())
+            else:
+                action_is_possible_flag = True
+
+        # pick random direction just in case there is nothing to do
+        if (len(object_list) == 0) or (action_is_possible_flag and not self.is_target_set()):
+            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            if x_v == 0 and y_v == 0:
+                x_v = self.get_dist()
+                y_v = - self.get_dist()
+            min_x = engine.get_min_x()
+            max_x = engine.get_max_x()
+            min_y = engine.get_min_y()
+            max_y = engine.get_max_y()
+            target_x = max(min(self.get_x() + x_v, max_x), min_x)
+            target_y = max(min(self.get_y() + y_v, max_y), min_y)
+            self.set_target(target_x, target_y)
 
         # move sequence
         if self.is_target_set():
-            target_x = self.get_target_x()
-            target_y = self.get_target_y()
+            # a crutch to fix out of range
+            max_x = engine.get_max_x()
+            min_x = engine.get_min_x()
+            max_y = engine.get_max_y()
+            min_y = engine.get_min_y()
+            target_x = max(min(self.get_target_x(), max_x), min_x)
+            target_y = max(min(self.get_target_y(), max_y), min_y)
+            self.set_target(target_x, target_y)
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
@@ -766,7 +811,7 @@ class Bear(Animal):
                 engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
-            else:
+            elif (vector_x != 0) or (vector_y != 0):
                 ratio = self.get_dist() / math.sqrt(vector_x ** 2 + vector_y ** 2)
                 vector_x = math.floor(vector_x * ratio)
                 vector_y = math.floor(vector_y * ratio)

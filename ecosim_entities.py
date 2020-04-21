@@ -516,6 +516,7 @@ class EcoMap:
             index = 0
             samples = random.sample(lst_select, obj_count)
             for s in samples:
+                # todo None object caught on jump, fix it
                 s_x = min_x + s % x_len
                 s_y = min_y + s // x_len
                 tmp_obj = self.get_obj_by_id(keys[index])
@@ -526,7 +527,8 @@ class EcoMap:
             return True
 
     def add_multiple_objects_around(self, pos_x: int, pos_y: int, spread: int, objects: List[EcoObject]) -> bool:
-        # todo it doesn't place points right, consider minimum pos
+        if not self.has_point_inside(pos_x, pos_y):
+            return False
         min_x = max(0, pos_x - spread)
         max_x = min(pos_x + spread, self.get_width() - 1)
         min_y = max(0, pos_y - spread)
@@ -615,6 +617,10 @@ class Engine:
 
     def __init__(self, eco_map: EcoMap):
         self._eco_map = eco_map
+        self._denied_breed_animals_total = 0
+        self._denied_breed_animals_subturn = 0
+        self._denied_breed_plants_total = 0
+        self._denied_breed_plants_subturn = 0
 
     def get_eco_map(self) -> EcoMap:
         return self._eco_map
@@ -640,6 +646,37 @@ class Engine:
             return False
 
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
+        # restrictions for space
+        the_map = self.get_eco_map()
+        spread: int = 1
+        min_space_for_animals: int = 2
+        min_space_for_plants: int = 6
+
+        parent_1_min_x = max(min(self.get_max_x(), parent_1.get_x()-spread), self.get_min_x())
+        parent_1_max_x = max(min(self.get_max_x(), parent_1.get_x() + spread), self.get_min_x())
+        parent_1_min_y = max(min(self.get_max_y(), parent_1.get_y() - spread), self.get_min_y())
+        parent_1_max_y = max(min(self.get_max_y(), parent_1.get_y() + spread), self.get_min_y())
+
+        parent_2_min_x = max(min(self.get_max_x(), parent_2.get_x() - spread), self.get_min_x())
+        parent_2_max_x = max(min(self.get_max_x(), parent_2.get_x() + spread), self.get_min_x())
+        parent_2_min_y = max(min(self.get_max_y(), parent_2.get_y() - spread), self.get_min_y())
+        parent_2_max_y = max(min(self.get_max_y(), parent_2.get_y() + spread), self.get_min_y())
+
+        p_1_space = the_map.count_free_space(parent_1_min_x, parent_1_min_y, parent_1_max_x, parent_1_max_y)
+        p_2_space = the_map.count_free_space(parent_2_min_x, parent_2_min_y, parent_2_max_x, parent_2_max_y)
+
+        if isinstance(parent_1, Animal) and isinstance(parent_2, Animal):
+            if p_1_space < min_space_for_animals or p_2_space < min_space_for_animals:
+                self._denied_breed_animals_total += 1
+                self._denied_breed_animals_subturn += 1
+                return False
+        if isinstance(parent_1, Plant) and isinstance(parent_2, Plant):
+            if p_1_space < min_space_for_plants or p_2_space < min_space_for_plants:
+                self._denied_breed_plants_total += 1
+                self._denied_breed_plants_subturn += 1
+                return False
+
+        # main algorithm
         equality: bool = (parent_1.get_x() == parent_2.get_x()) and (parent_1.get_y() == parent_2.get_y())
         species: bool = parent_1.get_name().__eq__(parent_2.get_name())
         p_breed: bool = parent_1.can_breed() and parent_2.can_breed()
@@ -682,7 +719,7 @@ class Engine:
 
     def can_step(self, obj: EcoObject, x_dir: int, y_dir: int) -> bool:
         if x_dir == 0 and y_dir == 0:
-            raise ValueError('no step data')
+            return False
         point_x = obj.get_x()
         point_y = obj.get_y()
         if x_dir > 0:
@@ -702,7 +739,7 @@ class Engine:
 
     def can_jump(self, obj: Animal, x_dir: int, y_dir: int) -> bool:
         if x_dir == 0 and y_dir == 0:
-            raise ValueError('no jump data')
+            return False
         point_x = obj.get_x() + x_dir
         point_y = obj.get_y() + y_dir
         range_flag = obj.get_dist() >= round(math.sqrt(x_dir**2 + y_dir**2))
@@ -771,6 +808,7 @@ class Engine:
                         animal_food.alter_life(-delta)
                         cur_map.remove_obj_by_pos(pre_x, pre_y)
                         obj.alter_energy(- obj.get_dist())
+                        # todo None object caught on jump, fix it
                         spread = Engine.get_failed_str_spread()
                         cur_map.move_multiple_objects_to(point_x, point_y, spread, [cur_map.get_obj_id_by_pos(pre_x, pre_y)])
                     else:
@@ -840,12 +878,21 @@ class Engine:
             x_max = x_pos + start_spread
             y_min = y_pos - start_spread
             y_max = y_pos + start_spread
+
+            x_min = max(min(x_min, self.get_max_x()), self.get_min_x())
+            x_max = max(min(x_max, self.get_max_x()), self.get_min_x())
+            y_min = max(min(y_min, self.get_max_y()), self.get_min_y())
+            y_max = max(min(y_max, self.get_max_y()), self.get_min_y())
             while the_map.count_free_space(x_min, y_min, x_max, y_max) < target_count:
                 start_spread += 1
                 x_min = x_pos - start_spread
                 x_max = x_pos + start_spread
                 y_min = y_pos - start_spread
                 y_max = y_pos + start_spread
+                x_min = max(min(x_min, self.get_max_x()), self.get_min_x())
+                x_max = max(min(x_max, self.get_max_x()), self.get_min_x())
+                y_min = max(min(y_min, self.get_max_y()), self.get_min_y())
+                y_max = max(min(y_max, self.get_max_y()), self.get_min_y())
             return the_map.add_multiple_objects_around(x_pos, y_pos, start_spread, offsprings)
 
     def breed_by_pos(self, parent: EcoObject, x_pos: int, y_pos: int) -> bool:
@@ -917,9 +964,22 @@ class Engine:
     def update(self) -> NoReturn:
         the_map = self.get_eco_map()
         keys = the_map.get_all_obj_keys()
+        removed_count: int = 0
         for k in keys:
             obj = the_map.get_eco_obj_by_id(k)
-            obj.update()
+            if obj.get_life_value()<=0:
+                the_map.remove_obj_by_id(k)
+                removed_count += 1
+            else:
+                obj.update()
+        #debug
+        print('==TOTAL REMOVED %i' % removed_count)
+        print('=denied animals total %i' % self._denied_breed_animals_total)
+        print('=denied animals subturn %i' % self._denied_breed_animals_subturn)
+        self._denied_breed_animals_subturn = 0
+        print('=denied plants total %i' % self._denied_breed_plants_total)
+        print('=denied plants subturn %i' % self._denied_breed_plants_subturn)
+        self._denied_breed_plants_subturn = 0
 
 
 class UIDisplay:
@@ -983,7 +1043,7 @@ class Plant(EcoObject):
         return int(self.get_max_energy()/5)
 
     def can_breed(self) -> bool:
-        return self.get_energy_value() > self.get_breed_energy_cost() + int(self.get_max_energy()/10) + 1
+        return self.get_energy_value() > self.get_breed_energy_cost() + int(self.get_max_energy()/5) + 1
 
     def create_descendant(self,
                           start_life: int,
@@ -1087,6 +1147,7 @@ class Plant(EcoObject):
     def update(self):
         self.alter_life(-1)
         self.alter_energy(1)
+        self._speed = self.get_speed_max()
 
 
 class Animal(EcoObject):
@@ -1277,6 +1338,7 @@ class Animal(EcoObject):
         else:
             self.alter_life(-3)
         self.alter_energy(-(self.get_strength() + self.get_speed_max() - self.get_speed()))
+        self._speed = self.get_speed_max()
 
     def eat(self, obj: EcoObject) -> bool:
         if self.can_eat(obj):

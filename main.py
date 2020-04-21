@@ -9,10 +9,10 @@ delay = 1
 
 width = 40
 height = 30
-grass_count = 1
-rabbit_count = 2
-wolf_count = 0
-bear_count = 0
+grass_count = 2
+rabbit_count = 6
+wolf_count = 2
+bear_count = 2
 grass_spread = 2
 rabbit_spread = 2
 wolf_spread = 2
@@ -34,7 +34,7 @@ rabbits: List[EcoObject] = []
 wolfs: List[EcoObject] = []
 bears: List[EcoObject] = []
 for i in range(grass_count):
-    grass.append(Grass(40, 40, 40, 40, 'g', 0, 0, 1, 1, 3, 1, 1, True, 10))
+    grass.append(Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10))
 for i in range(rabbit_count):
     gender = Gender.FEMALE
     if i % 2 == 0:
