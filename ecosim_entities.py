@@ -68,7 +68,7 @@ class EcoObject:
         return random.randint(min_plank, max_plank)
 
     def _dist_sqr(self, obj: EcoObject) -> int:
-        return (self.get_x() - obj.get_x())**2 + (self.get_y() - self.get_y())**2
+        return (self.get_x() - obj.get_x())**2 + (self.get_y() - obj.get_y())**2
 
     def __init__(self,
                  start_life: int,
@@ -631,6 +631,14 @@ class Engine:
     def get_max_y(self) -> int:
         return self.get_eco_map().get_height() - 1
 
+    def can_breed_at_pos(self, parent_1: EcoObject, x_pos: int, y_pos:int) -> bool:
+        the_map = self.get_eco_map()
+        if the_map.has_object_at(x_pos, y_pos):
+            tmp = the_map.get_obj_by_pos(x_pos, y_pos)
+            return self.can_breed(parent_1, tmp)
+        else:
+            return False
+
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         equality: bool = (parent_1.get_x() == parent_2.get_x()) and (parent_1.get_y() == parent_2.get_y())
         species: bool = parent_1.get_name().__eq__(parent_2.get_name())
@@ -643,6 +651,14 @@ class Engine:
             an2 = parent_2
             gender = an1.get_gender() != an2.get_gender()
         return ((not equality) or (parent_1.get_can_breed_on_self() and parent_2.get_can_breed_on_self())) and species and p_breed and close_enough and gender
+
+    def can_eat_at_pos(self, obj: Animal, x_pos: int, y_pos: int) -> bool:
+        the_map = self.get_eco_map()
+        if the_map.has_object_at(x_pos, y_pos):
+            tmp = the_map.get_obj_by_pos(x_pos, y_pos)
+            return self.can_eat(obj, tmp)
+        else:
+            return False
 
     def can_eat(self, obj: Animal, food: EcoObject) -> bool:
         x_diff = abs(obj.get_x() - food.get_x())
@@ -768,6 +784,14 @@ class Engine:
         else:
             return False
 
+    def eat_by_pos(self, eater_obj: Animal, x_pos: int, y_pos: int) -> bool:
+        the_map = self.get_eco_map()
+        if the_map.has_object_at(x_pos, y_pos):
+            tmp_food = the_map.get_obj_by_pos(x_pos, y_pos)
+            return self.eat(eater_obj, tmp_food)
+        else:
+            return False
+
     def eat(self, eater_obj: Animal, prey_obj: EcoObject) -> bool:
         if self.can_eat(eater_obj, prey_obj):
             pre_x = eater_obj.get_x()
@@ -824,6 +848,14 @@ class Engine:
                 y_max = y_pos + start_spread
             return the_map.add_multiple_objects_around(x_pos, y_pos, start_spread, offsprings)
 
+    def breed_by_pos(self, parent: EcoObject, x_pos: int, y_pos: int) -> bool:
+        the_map = self.get_eco_map()
+        if the_map.has_object_at(x_pos, y_pos):
+            tmp_parent = the_map.get_obj_by_pos(x_pos, y_pos)
+            return self.breed(parent, tmp_parent)
+        else:
+            return False
+
     def breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         if self.can_breed(parent_1, parent_2):
             x_pos = parent_1.get_x()
@@ -855,20 +887,24 @@ class Engine:
         the_map = self.get_eco_map()
         keys = the_map.get_all_obj_keys()
         count: int = 0
+        # debug
+        print(keys)
         for k in keys:
-            obj = the_map.get_eco_obj_by_id(k)
-            if obj.get_speed() > 0:
-                count += 1
-                x_pos = obj.get_x()
-                y_pos = obj.get_y()
-                spread = obj.get_sight()
-                x_min = x_pos - spread
-                x_max = x_pos + spread
-                y_min = y_pos - spread
-                y_max = y_pos + spread
-                interactable = the_map.get_objects_in_zone(x_min, y_min, x_max, y_max)
-                obj.act_on(interactable, self)
-                obj.alter_speed(-1)
+            print('id %i' % k)
+            if the_map.has_object_id(k):
+                obj = the_map.get_eco_obj_by_id(k)
+                if obj.get_speed() > 0:
+                    count += 1
+                    x_pos = obj.get_x()
+                    y_pos = obj.get_y()
+                    spread = obj.get_sight()
+                    x_min = x_pos - spread
+                    x_max = x_pos + spread
+                    y_min = y_pos - spread
+                    y_max = y_pos + spread
+                    interactable = the_map.get_objects_in_zone(x_min, y_min, x_max, y_max)
+                    obj.act_on(interactable, self)
+                    obj.alter_speed(-1)
         return count
 
     def full_turn(self) -> int:

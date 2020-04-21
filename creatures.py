@@ -179,11 +179,13 @@ class Rabbit(Animal):
 
     def act_on(self, object_list: List[EcoObject], engine: Engine):
         # reseting target
-        if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (self.get_y() == self.get_target_y()):
+        if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
+                self.get_y() == self.get_target_y()):
             self.reset_target()
+
         if len(object_list) == 0:
-            x_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
-            y_v = self.get_speed_max()*random.randint(-self.get_dist(), self.get_dist())
+            x_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
+            y_v = self.get_speed_max() * random.randint(-self.get_dist(), self.get_dist())
             if x_v == 0 and y_v == 0:
                 x_v = self.get_dist()
                 y_v = - self.get_dist()
@@ -203,7 +205,11 @@ class Rabbit(Animal):
         for eo in object_list:
             if eo.__ne__(self):
                 if eo.get_name().__eq__(self.get_name()) and eo.can_breed():
-                    acceptable.append(eo)
+                    if isinstance(eo, Animal) and isinstance(self, Animal):
+                        if eo.get_gender() != self.get_gender():
+                            acceptable.append(eo)
+                    else:
+                        acceptable.append(eo)
                 if isinstance(eo, Animal):
                     tmp = eo
                     if (tmp.can_eat(self)) and (self.get_strength() < tmp.get_strength()):
@@ -222,22 +228,23 @@ class Rabbit(Animal):
             y_start = self.get_y()
             y_vec_sum = 0
             x_vec_sum = 0
+            count = 0
             min_x = engine.get_min_x()
             max_x = engine.get_max_x()
             min_y = engine.get_min_y()
             max_y = engine.get_max_y()
-            count = 0
             for ea in eaters:
                 tmp_x_v = ea.get_x() - x_start
                 tmp_y_v = ea.get_y() - y_start
                 count += 1
                 x_vec_sum += tmp_x_v
                 y_vec_sum += tmp_y_v
-            target_x: int = max(min(x_start - self.get_speed_max()*round(x_vec_sum/count), max_x), min_x)
-            target_y: int = max(min(y_start - self.get_speed_max()*round(y_vec_sum/count), max_y), min_y)
+            target_x: int = max(min(x_start - self.get_speed_max() * round(x_vec_sum / count), max_x), min_x)
+            target_y: int = max(min(y_start - self.get_speed_max() * round(y_vec_sum / count), max_y), min_y)
             self.set_target(target_x, target_y)
+
         #  feed sequence
-        if not self.can_breed() and not self.is_target_set() and len(food) > 0:
+        if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -252,43 +259,49 @@ class Rabbit(Animal):
                     min_food_distance = distance
                     min_distance_candidate = f
             candidate: EcoObject = max_energy_candidate
-            ratio = self._dist_sqr(max_energy_candidate)/min_food_distance
-            if ratio >= 4:
+
+            ratio = self._dist_sqr(max_energy_candidate) / min_food_distance
+            if ratio >= 4 or min_food_distance <= 2:
                 candidate = min_distance_candidate
             # action selection
-            target_x = candidate.get_x()
-            target_y = candidate.get_y()
-            self.set_target(target_x, target_y)
+            food_distance = self._dist_sqr(candidate)
+            if food_distance <= 2:
+                engine.eat(self, candidate)
+                self.reset_target()
+            else:
+                target_x = candidate.get_x()
+                target_y = candidate.get_y()
+                self.set_target(target_x, target_y)
 
         # breed sequence
-        if self.can_breed() and not self.is_target_set():
+        if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
             for a in acceptable:
                 if (self._dist_sqr(a) <= breed_range ** 2) and (engine.can_breed(self, a)):
                     real_candidates.append(a)
-            max_energy = real_candidates[0].get_energy_value()
-            candidate = real_candidates[0]
-            if isinstance(self, Plant):
-                if len(real_candidates) > 0:
-
-                    for c in real_candidates:
+            if len(real_candidates) > 0:
+                max_energy = real_candidates[0].get_energy_value()
+                candidate = real_candidates[0]
+                if isinstance(self, Plant):
+                    if len(real_candidates) > 0:
+                        for c in real_candidates:
+                            if c.get_energy_value() > max_energy:
+                                max_energy = c.get_energy_value()
+                                candidate = c
+                        engine.breed(self, candidate)
+                    else:
+                        engine.breed(self, self)
+                elif isinstance(self, Animal):
+                    for c in acceptable:
                         if c.get_energy_value() > max_energy:
                             max_energy = c.get_energy_value()
                             candidate = c
-                    engine.breed(self, candidate)
-                else:
-                    engine.breed(self, self)
-            elif isinstance(self, Animal):
-                for c in acceptable:
-                    if c.get_energy_value() > max_energy:
-                        max_energy = c.get_energy_value()
-                        candidate = c
-                if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
-                    engine.breed(self, candidate)
-                else:
-                    self.set_target(candidate.get_x(), candidate.get_y())
+                    if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
+                        engine.breed(self, candidate)
+                    else:
+                        self.set_target(candidate.get_x(), candidate.get_y())
 
         # move sequence
         if self.is_target_set():
@@ -297,14 +310,18 @@ class Rabbit(Animal):
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
-                engine.jump(self, target_x, target_y)
+                engine.jump(self, vector_x, vector_y)
                 self.reset_target()
+            elif engine.can_breed_at_pos(self, target_x, target_y):
+                engine.breed_by_pos(self, target_x, target_y)
+            elif engine.can_eat_at_pos(self, target_x, target_y):
+                engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
             else:
-                ratio = self.get_dist()/math.sqrt(vector_x**2 + vector_y**2)
-                vector_x = math.floor(vector_x*ratio)
-                vector_y = math.floor(vector_y*ratio)
+                ratio = self.get_dist() / math.sqrt(vector_x ** 2 + vector_y ** 2)
+                vector_x = math.floor(vector_x * ratio)
+                vector_y = math.floor(vector_y * ratio)
                 engine.jump(self, vector_x, vector_y)
 
 
@@ -385,7 +402,8 @@ class Wolf(Animal):
 
     def act_on(self, object_list: List[EcoObject], engine: Engine):
         # reseting target
-        if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (self.get_y() == self.get_target_y()):
+        if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
+                self.get_y() == self.get_target_y()):
             self.reset_target()
 
         if len(object_list) == 0:
@@ -407,11 +425,14 @@ class Wolf(Animal):
         eaters: List[Animal] = []
         food: List[EcoObject] = []
         # filling lists
-
         for eo in object_list:
             if eo.__ne__(self):
                 if eo.get_name().__eq__(self.get_name()) and eo.can_breed():
-                    acceptable.append(eo)
+                    if isinstance(eo, Animal) and isinstance(self, Animal):
+                        if eo.get_gender() != self.get_gender():
+                            acceptable.append(eo)
+                    else:
+                        acceptable.append(eo)
                 if isinstance(eo, Animal):
                     tmp = eo
                     if (tmp.can_eat(self)) and (self.get_strength() < tmp.get_strength()):
@@ -444,8 +465,9 @@ class Wolf(Animal):
             target_x: int = max(min(x_start - self.get_speed_max() * round(x_vec_sum / count), max_x), min_x)
             target_y: int = max(min(y_start - self.get_speed_max() * round(y_vec_sum / count), max_y), min_y)
             self.set_target(target_x, target_y)
+
         #  feed sequence
-        if not self.can_breed() and not self.is_target_set() and len(food) > 0:
+        if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
             min_food_distance = self._dist_sqr(food[0])
@@ -460,42 +482,49 @@ class Wolf(Animal):
                     min_food_distance = distance
                     min_distance_candidate = f
             candidate: EcoObject = max_energy_candidate
+
             ratio = self._dist_sqr(max_energy_candidate) / min_food_distance
-            if ratio >= 4:
+            if ratio >= 4 or min_food_distance <= 2:
                 candidate = min_distance_candidate
             # action selection
-            target_x = candidate.get_x()
-            target_y = candidate.get_y()
-            self.set_target(target_x, target_y)
+            food_distance = self._dist_sqr(candidate)
+            if food_distance <= 2:
+                engine.eat(self, candidate)
+                self.reset_target()
+            else:
+                target_x = candidate.get_x()
+                target_y = candidate.get_y()
+                self.set_target(target_x, target_y)
 
         # breed sequence
-        if self.can_breed() and not self.is_target_set():
+        if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
             # candidate list
             breed_range = engine.get_breed_range()
             real_candidates: List[EcoObject] = []
             for a in acceptable:
                 if (self._dist_sqr(a) <= breed_range ** 2) and (engine.can_breed(self, a)):
                     real_candidates.append(a)
-            max_energy = acceptable[0].get_energy_value()
-            candidate = acceptable[0]
-            if isinstance(self, Plant):
-                if len(real_candidates) > 0:
-                    for c in real_candidates:
+            if len(real_candidates) > 0:
+                max_energy = real_candidates[0].get_energy_value()
+                candidate = real_candidates[0]
+                if isinstance(self, Plant):
+                    if len(real_candidates) > 0:
+                        for c in real_candidates:
+                            if c.get_energy_value() > max_energy:
+                                max_energy = c.get_energy_value()
+                                candidate = c
+                        engine.breed(self, candidate)
+                    else:
+                        engine.breed(self, self)
+                elif isinstance(self, Animal):
+                    for c in acceptable:
                         if c.get_energy_value() > max_energy:
                             max_energy = c.get_energy_value()
                             candidate = c
-                    engine.breed(self, candidate)
-                else:
-                    engine.breed(self, self)
-            elif isinstance(self, Animal):
-                for c in acceptable:
-                    if c.get_energy_value() > max_energy:
-                        max_energy = c.get_energy_value()
-                        candidate = c
-                if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
-                    engine.breed(self, candidate)
-                else:
-                    self.set_target(candidate.get_x(), candidate.get_y())
+                    if (self._dist_sqr(candidate) <= breed_range ** 2) and (engine.can_breed(self, candidate)):
+                        engine.breed(self, candidate)
+                    else:
+                        self.set_target(candidate.get_x(), candidate.get_y())
 
         # move sequence
         if self.is_target_set():
@@ -504,8 +533,12 @@ class Wolf(Animal):
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
-                engine.jump(self, target_x, target_y)
+                engine.jump(self, vector_x, vector_y)
                 self.reset_target()
+            elif engine.can_breed_at_pos(self, target_x, target_y):
+                engine.breed_by_pos(self, target_x, target_y)
+            elif engine.can_eat_at_pos(self, target_x, target_y):
+                engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
             else:
@@ -657,9 +690,8 @@ class Bear(Animal):
             target_x: int = max(min(x_start - self.get_speed_max() * round(x_vec_sum / count), max_x), min_x)
             target_y: int = max(min(y_start - self.get_speed_max() * round(y_vec_sum / count), max_y), min_y)
             self.set_target(target_x, target_y)
+
         #  feed sequence
-        # todo fix case of no mates while can breed and food is present
-        # todo make eating possible for being right next to target
         if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
@@ -675,14 +707,19 @@ class Bear(Animal):
                     min_food_distance = distance
                     min_distance_candidate = f
             candidate: EcoObject = max_energy_candidate
-            # todo comprehand min_food_dist zero
+
             ratio = self._dist_sqr(max_energy_candidate) / min_food_distance
-            if ratio >= 4:
+            if ratio >= 4 or min_food_distance <= 2:
                 candidate = min_distance_candidate
             # action selection
-            target_x = candidate.get_x()
-            target_y = candidate.get_y()
-            self.set_target(target_x, target_y)
+            food_distance = self._dist_sqr(candidate)
+            if food_distance <= 2:
+                engine.eat(self, candidate)
+                self.reset_target()
+            else:
+                target_x = candidate.get_x()
+                target_y = candidate.get_y()
+                self.set_target(target_x, target_y)
 
         # breed sequence
         if self.can_breed() and len(acceptable) > 0 and not self.is_target_set():
@@ -693,7 +730,6 @@ class Bear(Animal):
                 if (self._dist_sqr(a) <= breed_range ** 2) and (engine.can_breed(self, a)):
                     real_candidates.append(a)
             if len(real_candidates) > 0:
-                # todo: fix breeding for zero mate case (index error too)
                 max_energy = real_candidates[0].get_energy_value()
                 candidate = real_candidates[0]
                 if isinstance(self, Plant):
@@ -715,7 +751,6 @@ class Bear(Animal):
                     else:
                         self.set_target(candidate.get_x(), candidate.get_y())
 
-        # todo add eating target
         # move sequence
         if self.is_target_set():
             target_x = self.get_target_x()
@@ -723,8 +758,12 @@ class Bear(Animal):
             vector_x = target_x - self.get_x()
             vector_y = target_y - self.get_y()
             if engine.can_jump(self, vector_x, vector_y):
-                engine.jump(self, target_x, target_y)
+                engine.jump(self, vector_x, vector_y)
                 self.reset_target()
+            elif engine.can_breed_at_pos(self, target_x, target_y):
+                engine.breed_by_pos(self, target_x, target_y)
+            elif engine.can_eat_at_pos(self, target_x, target_y):
+                engine.eat_by_pos(self, target_x, target_y)
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
             else:
