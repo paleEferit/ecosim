@@ -9,10 +9,10 @@ delay = 1
 
 width = 40
 height = 30
-grass_count = 0
-rabbit_count = 0
-wolf_count = 0
-bear_count = 0
+grass_count = 4
+rabbit_count = 4
+wolf_count = 4
+bear_count = 4
 grass_spread = 2
 rabbit_spread = 2
 wolf_spread = 2
@@ -63,8 +63,8 @@ my_test_grass = Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10)
 my_test_bear = Bear(100, 100, 100, 100, 'b', 2, 2, 3, 1, 3, 5, 5, False, 8, 10, Gender.MALE)
 my_test_rabbit = Rabbit(70, 70, 70, 70, 'r', 1, 1, 5, 1, 4, 4, 4, False, 10, 6, Gender.MALE)
 my_test_wolf.set_target(4, 2)
-the_map.add_obj_to_pos(my_test_wolf, 2, 2)
-the_map.add_obj_to_pos(my_test_rabbit, 4, 2)
+# the_map.add_obj_to_pos(my_test_wolf, 2, 2)
+# the_map.add_obj_to_pos(my_test_rabbit, 4, 2)
 # the_map.add_obj_to_pos(my_test_bear, 4, 2)
 # the_map.add_obj_to_pos(my_test_grass, 4, 2)
 print('Map is ready...')

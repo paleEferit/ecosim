@@ -77,6 +77,7 @@ class VisualApp(tk.Frame):
 
     def sub_turn_engine(self):
         self._engine.sub_turn()
+        self._engine.clear_acted_list()
 
     @staticmethod
     def get_blank_image(width: int, height: int, r: int, g: int, b: int) -> tk.PhotoImage:

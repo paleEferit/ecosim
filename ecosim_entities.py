@@ -474,10 +474,10 @@ class EcoMap:
     def get_objects_in_zone(self, start_x: int, start_y: int, end_x: int, end_y: int) -> List[EcoObject]:
         res: List[EcoObject] = []
         if self.has_point_inside(start_x, start_y) or self.has_point_inside(end_x, end_y) or self.has_point_inside(start_x, end_y) or self.has_point_inside(end_x, start_y):
-            min_x = max(min(start_x, end_x), 0)
-            max_x = min(max(start_x, end_x), self.get_width()-1)
+            min_x = min(max(min(start_x, end_x), 0), self.get_width()-1)
+            max_x = min(max(max(start_x, end_x), 0), self.get_width()-1)
             min_y = min(max(min(start_y, end_y), 0), self.get_height()-1)
-            max_y = max(start_y, end_y)
+            max_y = min(max(max(start_y, end_y), 0), self.get_height()-1)
             for i in range(min_y, max_y + 1, 1):
                 for j in range(min_x, max_x + 1, 1):
                     key_val = self._object_map[i][j]
@@ -622,10 +622,34 @@ class Engine:
 
     def __init__(self, eco_map: EcoMap):
         self._eco_map = eco_map
+        self._sub_turn_actions_taken: List[int] = []
+        # debug data
         self._denied_breed_animals_total = 0
         self._denied_breed_animals_subturn = 0
         self._denied_breed_plants_total = 0
         self._denied_breed_plants_subturn = 0
+
+    def add_to_acted_list(self, obj:EcoObject) -> bool:
+        the_map = self.get_eco_map()
+        key = the_map.get_obj_id_by_pos(obj.get_x(), obj.get_y())
+        if key in self._sub_turn_actions_taken:
+            return False
+        else:
+            self._sub_turn_actions_taken.append(key)
+            return True
+
+    def clear_acted_list(self) -> int:
+        res = len(self._sub_turn_actions_taken)
+        self._sub_turn_actions_taken.clear()
+        return res
+
+    def can_act_on_subturn(self, obj: EcoObject) -> bool:
+        the_map = self.get_eco_map()
+        key = the_map.get_obj_id_by_pos(obj.get_x(), obj.get_y())
+        if key in self._sub_turn_actions_taken:
+            return False
+        else:
+            return True
 
     def get_eco_map(self) -> EcoMap:
         return self._eco_map
@@ -651,6 +675,8 @@ class Engine:
             return False
 
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
+        if not self.can_act_on_subturn(parent_1) or not self.can_act_on_subturn(parent_2):
+            return False
         # restrictions for space
         the_map = self.get_eco_map()
         spread: int = 1
@@ -705,6 +731,8 @@ class Engine:
     def can_eat(self, obj: Animal, food: EcoObject) -> bool:
         x_diff = abs(obj.get_x() - food.get_x())
         y_diff = abs(obj.get_y() - food.get_y())
+        if (x_diff == 0 and y_diff == 0) or not self.can_act_on_subturn(obj):
+            return False
         res: bool = False
         if (x_diff <= 1) and (y_diff <= 1):
             point_x = food.get_x()
@@ -723,7 +751,7 @@ class Engine:
         return res
 
     def can_step(self, obj: EcoObject, x_dir: int, y_dir: int) -> bool:
-        if x_dir == 0 and y_dir == 0:
+        if (x_dir == 0 and y_dir == 0) or not self.can_act_on_subturn(obj):
             return False
         point_x = obj.get_x()
         point_y = obj.get_y()
@@ -743,7 +771,7 @@ class Engine:
         return free_flag
 
     def can_jump(self, obj: Animal, x_dir: int, y_dir: int) -> bool:
-        if x_dir == 0 and y_dir == 0:
+        if (x_dir == 0 and y_dir == 0) or not self.can_act_on_subturn(obj):
             return False
         point_x = obj.get_x() + x_dir
         point_y = obj.get_y() + y_dir
@@ -767,6 +795,7 @@ class Engine:
 
     def step(self, obj: EcoObject, x_dir: int, y_dir: int) -> bool:
         if self.can_step(obj, x_dir, y_dir) and obj.has_speed():
+            self.add_to_acted_list(obj)
             pre_x = obj.get_x()
             point_x = pre_x
             pre_y = obj.get_y()
@@ -787,6 +816,7 @@ class Engine:
 
     def jump(self, obj: Animal, x_dir: int, y_dir: int) -> bool:
         if self.can_jump(obj, x_dir, y_dir) and obj.has_speed():
+            self.add_to_acted_list(obj)
             pre_x = obj.get_x()
             pre_y = obj.get_y()
             point_x = obj.get_x() + x_dir
@@ -833,6 +863,7 @@ class Engine:
 
     def eat(self, eater_obj: Animal, prey_obj: EcoObject) -> bool:
         if self.can_eat(eater_obj, prey_obj):
+            self.add_to_acted_list(eater_obj)
             pre_x = eater_obj.get_x()
             pre_y = eater_obj.get_y()
             point_x = prey_obj.get_x()
@@ -906,6 +937,8 @@ class Engine:
 
     def breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         if self.can_breed(parent_1, parent_2):
+            self.add_to_acted_list(parent_1)
+            self.add_to_acted_list(parent_2)
             x_pos = parent_1.get_x()
             y_pos = parent_1.get_y()
             offsprings: List[EcoObject] = []
@@ -953,6 +986,10 @@ class Engine:
                     interactable = the_map.get_objects_in_zone(x_min, y_min, x_max, y_max)
                     obj.act_on(interactable, self)
                     obj.alter_speed(-1)
+
+        acted = self.clear_acted_list()
+        #debug
+        print('===TOTAL ACTED %i' % acted)
         return count
 
     def full_turn(self) -> int:
@@ -973,8 +1010,9 @@ class Engine:
                 removed_count += 1
             else:
                 obj.update()
+
         #debug
-        print('==TOTAL REMOVED %i' % removed_count)
+        print('===TOTAL REMOVED %i' % removed_count)
         print('=denied animals total %i' % self._denied_breed_animals_total)
         print('=denied animals subturn %i' % self._denied_breed_animals_subturn)
         self._denied_breed_animals_subturn = 0
