@@ -185,6 +185,9 @@ class Rabbit(Animal):
 
         # todo: make it a check on engine side later
         action_is_possible_flag: bool = True
+        # more for testing mb
+        if self.is_target_set():
+            action_is_possible_flag = False
 
         # making lists
         acceptable: List[EcoObject] = []
@@ -666,6 +669,9 @@ class Bear(Animal):
 
         # todo: make it a check on engine side later
         action_is_possible_flag: bool = True
+        # more for testing mb
+        if self.is_target_set():
+            action_is_possible_flag = False
 
         # making lists
         acceptable: List[EcoObject] = []
