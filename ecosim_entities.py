@@ -308,7 +308,8 @@ class EcoMap:
         return res_id
 
     def get_obj_id_by_pos(self, x: int, y: int) -> int:
-        return self._object_map[y][x]
+        res = self._object_map[y][x]
+        return res
 
     def add_obj_no_placing(self, obj: EcoObject) -> bool:
         x_pos = obj.get_x()
@@ -353,12 +354,12 @@ class EcoMap:
                         count += 1
             return count
 
-    def has_free_space(self, start_x, start_y, end_x, end_y) -> int:
-        if self.has_point_inside(start_x, start_y) and self.has_point_inside(end_x, end_y):
-            min_x = min(start_x, end_x)
-            min_y = min(start_y, end_y)
-            max_x = max(start_x, end_x)
-            max_y = max(start_y, end_y)
+    def has_free_space(self, start_x, start_y, end_x, end_y) -> bool:
+        if self.has_point_inside(start_x, start_y) or self.has_point_inside(end_x, end_y) or self.has_point_inside(start_x, end_y) or self.has_point_inside(end_x, start_y):
+            min_x = min(max(min(start_x, end_x), 0), self._width-1)
+            min_y = min(max(min(start_y, end_y), 0), self._height-1)
+            max_x = min(max(max(start_x, end_x), 0), self._width-1)
+            max_y = min(max(max(start_y, end_y), 0), self._height-1)
             res: bool = False
             for i in range(min_y, max_y + 1, 1):
                 for j in range(min_x, max_x + 1, 1):
@@ -368,6 +369,8 @@ class EcoMap:
                 if res:
                     break
             return res
+        else:
+            return len(self.get_all_obj_keys()) < self._width*self._height
 
     def get_object_id(self, obj: EcoObject) -> int:
         if not self.has_object(obj):
@@ -470,7 +473,7 @@ class EcoMap:
 
     def get_objects_in_zone(self, start_x: int, start_y: int, end_x: int, end_y: int) -> List[EcoObject]:
         res: List[EcoObject] = []
-        if self.has_point_inside(start_x, start_y) and self.has_point_inside(end_x, end_y):
+        if self.has_point_inside(start_x, start_y) or self.has_point_inside(end_x, end_y) or self.has_point_inside(start_x, end_y) or self.has_point_inside(end_x, start_y):
             min_x = max(min(start_x, end_x), 0)
             max_x = min(max(start_x, end_x), self.get_width()-1)
             min_y = min(max(min(start_y, end_y), 0), self.get_height()-1)
@@ -480,6 +483,8 @@ class EcoMap:
                     key_val = self._object_map[i][j]
                     if key_val != self.get_empty_id():
                         res.append(self.get_obj_by_id(key_val))
+        else:
+            res.extend(self._object_dict.values())
         return res
 
     def update_positions(self) -> NoReturn:
@@ -516,10 +521,10 @@ class EcoMap:
             index = 0
             samples = random.sample(lst_select, obj_count)
             for s in samples:
-                # todo None object caught on jump, fix it
                 s_x = min_x + s % x_len
                 s_y = min_y + s // x_len
-                tmp_obj = self.get_obj_by_id(keys[index])
+                key = keys[index]
+                tmp_obj = self.get_obj_by_id(key)
                 tmp_x = tmp_obj.get_x()
                 tmp_y = tmp_obj.get_y()
                 self.move_object(tmp_x, tmp_y, s_x, s_y)
@@ -793,7 +798,6 @@ class Engine:
                 if isinstance(food, Plant):
                     obj.eat(food)
                     obj.alter_energy(- obj.get_dist())
-                    cur_map.remove_obj_by_pos(point_x, point_y)
                     cur_map.move_object(pre_x, pre_y, point_x, point_y)
                 else:
                     animal_food = food
@@ -806,15 +810,12 @@ class Engine:
                         animal_food.alter_energy(-delta)
                         obj.alter_life(-delta)
                         animal_food.alter_life(-delta)
-                        cur_map.remove_obj_by_pos(pre_x, pre_y)
                         obj.alter_energy(- obj.get_dist())
-                        # todo None object caught on jump, fix it
                         spread = Engine.get_failed_str_spread()
                         cur_map.move_multiple_objects_to(point_x, point_y, spread, [cur_map.get_obj_id_by_pos(pre_x, pre_y)])
                     else:
                         obj.alter_energy(- obj.get_dist())
                         obj.eat(animal_food)
-                        cur_map.remove_obj_by_pos(point_x, point_y)
                         cur_map.move_object(pre_x, pre_y, point_x, point_y)
             else:
                 cur_map.move_object(pre_x, pre_y, point_x, point_y)
