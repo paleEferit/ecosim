@@ -20,14 +20,14 @@ bear_spread = 2
 resolution_width = 800
 resolution_height = 600
 
-grass_x = width//2
-grass_y = height//2
-rabbit_x = width//2+1
-rabbit_y = height//2+1
-wolf_x = width//2-1
-wolf_y = height//2-1
-bear_x = width//2-1
-bear_y = height//2+1
+grass_x = width//8 + 1
+grass_y = height - (height//8 + 1)
+rabbit_x = width//8+1
+rabbit_y = height//8+1
+wolf_x = width - (width//8 + 1)
+wolf_y = height//8-1
+bear_x = width - (width//8 + 1)
+bear_y = height - (height//8 + 1)
 print('Initializing...')
 grass: List[EcoObject] = []
 rabbits: List[EcoObject] = []
@@ -61,10 +61,11 @@ the_map.add_multiple_objects_around(bear_x, bear_y, bear_spread, bears)
 my_test_wolf = Wolf(90, 90, 90, 90, 'w', 1, 1, 7, 1, 2, 5, 5, False, 12, 5, Gender.MALE)
 my_test_grass = Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10)
 my_test_bear = Bear(100, 100, 100, 100, 'b', 2, 2, 3, 1, 3, 5, 5, False, 8, 10, Gender.MALE)
-my_test_rabbit = Rabbit(70, 70, 70, 70, 'r', 1, 1, 5, 1, 4, 4, 4, False, 10, 6, Gender.MALE)
-my_test_wolf.set_target(4, 2)
-# the_map.add_obj_to_pos(my_test_wolf, 2, 2)
-# the_map.add_obj_to_pos(my_test_rabbit, 4, 2)
+my_test_rabbit = Rabbit(70, 70, 70, 70, 'r', 1, 1, 5, 1, 4, 4, 4, False, 10, 4, Gender.MALE)
+# my_test_wolf.set_target(4, 2)
+# my_test_rabbit.set_target(3, 0)
+# the_map.add_obj_to_pos(my_test_rabbit, 1, 1)
+# the_map.add_obj_to_pos(my_test_wolf, 3, 3)
 # the_map.add_obj_to_pos(my_test_bear, 4, 2)
 # the_map.add_obj_to_pos(my_test_grass, 4, 2)
 print('Map is ready...')

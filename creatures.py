@@ -183,7 +183,6 @@ class Rabbit(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        # todo: make it a check on engine side later
         action_is_possible_flag: bool = True
         # more for testing mb
         if self.is_target_set():
@@ -424,7 +423,6 @@ class Wolf(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        # todo: make it a check on engine side later
         action_is_possible_flag: bool = True
         # more for testing mb
         if self.is_target_set():
@@ -667,7 +665,6 @@ class Bear(Animal):
                 self.get_y() == self.get_target_y()):
             self.reset_target()
 
-        # todo: make it a check on engine side later
         action_is_possible_flag: bool = True
         # more for testing mb
         if self.is_target_set():

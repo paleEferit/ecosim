@@ -668,6 +668,8 @@ class Engine:
 
     def can_breed_at_pos(self, parent_1: EcoObject, x_pos: int, y_pos:int) -> bool:
         the_map = self.get_eco_map()
+        if not the_map.has_point_inside(x_pos, y_pos):
+            return False
         if the_map.has_object_at(x_pos, y_pos):
             tmp = the_map.get_obj_by_pos(x_pos, y_pos)
             return self.can_breed(parent_1, tmp)
@@ -722,6 +724,8 @@ class Engine:
 
     def can_eat_at_pos(self, obj: Animal, x_pos: int, y_pos: int) -> bool:
         the_map = self.get_eco_map()
+        if not the_map.has_point_inside(x_pos, y_pos):
+            return False
         if the_map.has_object_at(x_pos, y_pos):
             tmp = the_map.get_obj_by_pos(x_pos, y_pos)
             return self.can_eat(obj, tmp)
@@ -764,6 +768,9 @@ class Engine:
             point_y += 1
         elif y_dir < 0:
             point_y -= 1
+        point_x = min(max(point_x, self.get_min_x()), self.get_max_x())
+        point_y = min(max(point_y, self.get_min_y()), self.get_max_y())
+
         the_map = self.get_eco_map()
         point_inside_flag = the_map.has_point_inside(point_x, point_y)
         free_space_flag = not the_map.has_object_at(point_x, point_y)
@@ -775,6 +782,8 @@ class Engine:
             return False
         point_x = obj.get_x() + x_dir
         point_y = obj.get_y() + y_dir
+        point_x = min(max(point_x, self.get_min_x()), self.get_max_x())
+        point_y = min(max(point_y, self.get_min_y()), self.get_max_y())
         range_flag = obj.get_dist() >= round(math.sqrt(x_dir**2 + y_dir**2))
         the_map = self.get_eco_map()
         pos_flag = the_map.has_point_inside(point_x, point_y)
@@ -808,12 +817,15 @@ class Engine:
                 point_y += 1
             elif y_dir < 0:
                 point_y -= 1
+            point_x = min(max(point_x, self.get_min_x()), self.get_max_x())
+            point_y = min(max(point_y, self.get_min_y()), self.get_max_y())
             the_map = self.get_eco_map()
             the_map.move_object(pre_x, pre_y, point_x, point_y)
             return True
         else:
             return False
 
+    # todo fix jump into the map border
     def jump(self, obj: Animal, x_dir: int, y_dir: int) -> bool:
         if self.can_jump(obj, x_dir, y_dir) and obj.has_speed():
             self.add_to_acted_list(obj)
@@ -821,6 +833,8 @@ class Engine:
             pre_y = obj.get_y()
             point_x = obj.get_x() + x_dir
             point_y = obj.get_y() + y_dir
+            point_x = min(max(point_x, self.get_min_x()), self.get_max_x())
+            point_y = min(max(point_y, self.get_min_y()), self.get_max_y())
             cur_map = self.get_eco_map()
             if cur_map.has_object_at(point_x, point_y):
                 food = cur_map.get_obj_by_pos(point_x, point_y)
@@ -855,7 +869,7 @@ class Engine:
 
     def eat_by_pos(self, eater_obj: Animal, x_pos: int, y_pos: int) -> bool:
         the_map = self.get_eco_map()
-        if the_map.has_object_at(x_pos, y_pos):
+        if self.can_eat_at_pos(eater_obj, x_pos, y_pos):
             tmp_food = the_map.get_obj_by_pos(x_pos, y_pos)
             return self.eat(eater_obj, tmp_food)
         else:
@@ -868,6 +882,8 @@ class Engine:
             pre_y = eater_obj.get_y()
             point_x = prey_obj.get_x()
             point_y = prey_obj.get_y()
+            point_x = min(max(point_x, self.get_min_x()), self.get_max_x())
+            point_y = min(max(point_y, self.get_min_y()), self.get_max_y())
             cur_map = self.get_eco_map()
             # food type
             if isinstance(prey_obj, Plant):
@@ -929,7 +945,7 @@ class Engine:
 
     def breed_by_pos(self, parent: EcoObject, x_pos: int, y_pos: int) -> bool:
         the_map = self.get_eco_map()
-        if the_map.has_object_at(x_pos, y_pos):
+        if self.can_breed_at_pos(x_pos, y_pos):
             tmp_parent = the_map.get_obj_by_pos(x_pos, y_pos)
             return self.breed(parent, tmp_parent)
         else:
