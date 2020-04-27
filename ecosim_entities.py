@@ -631,6 +631,7 @@ class Engine:
     def __init__(self, eco_map: EcoMap, fed_ratio: float):
         self._eco_map = eco_map
         self._sub_turn_actions_taken: List[int] = []
+        self._full_turn_breed_taken: List[int] = []
         if fed_ratio <= 0 or fed_ratio >= 1:
             raise ValueError('fed ration should be in (0;1), excluding 0 and 1')
         self._fed_ratio = fed_ratio
@@ -639,6 +640,28 @@ class Engine:
         self._denied_breed_animals_subturn = 0
         self._denied_breed_plants_total = 0
         self._denied_breed_plants_subturn = 0
+
+    def add_to_breed_list(self, obj:EcoObject) -> bool:
+        the_map = self.get_eco_map()
+        key = the_map.get_obj_id_by_pos(obj.get_x(), obj.get_y())
+        if key in self._full_turn_breed_taken:
+            return False
+        else:
+            self._full_turn_breed_taken.append(key)
+            return True
+
+    def clear_breed_list(self) -> int:
+        res = len(self._full_turn_breed_taken)
+        self._full_turn_breed_taken.clear()
+        return res
+
+    def can_breed_on_turn(self, obj: EcoObject) -> bool:
+        the_map = self.get_eco_map()
+        key = the_map.get_obj_id_by_pos(obj.get_x(), obj.get_y())
+        if key in self._full_turn_breed_taken:
+            return False
+        else:
+            return True
 
     def add_to_acted_list(self, obj:EcoObject) -> bool:
         the_map = self.get_eco_map()
@@ -689,7 +712,7 @@ class Engine:
 
     # todo make a breeding limit once per full turn
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
-        if not self.can_act_on_subturn(parent_1) or not self.can_act_on_subturn(parent_2):
+        if not self.can_act_on_subturn(parent_1) or not self.can_act_on_subturn(parent_2) or not self.can_breed_on_turn(parent_1) or not self.can_breed_on_turn(parent_2):
             return False
         # restrictions for space
         the_map = self.get_eco_map()
@@ -967,6 +990,8 @@ class Engine:
         if self.can_breed(parent_1, parent_2):
             self.add_to_acted_list(parent_1)
             self.add_to_acted_list(parent_2)
+            self.add_to_breed_list(parent_1)
+            self.add_to_breed_list(parent_2)
             x_pos = parent_1.get_x()
             y_pos = parent_1.get_y()
             offsprings: List[EcoObject] = []
@@ -1033,11 +1058,12 @@ class Engine:
         removed_count: int = 0
         for k in keys:
             obj = the_map.get_eco_obj_by_id(k)
-            if obj.get_life_value()<=0:
+            if obj.get_life_value() <= 0:
                 the_map.remove_obj_by_id(k)
                 removed_count += 1
             else:
                 obj.update()
+        self.clear_breed_list()
 
         #debug
         print('===TOTAL REMOVED %i' % removed_count)
