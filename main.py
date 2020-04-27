@@ -9,10 +9,10 @@ delay = 1
 
 width = 40
 height = 30
-grass_count = 4
-rabbit_count = 4
-wolf_count = 4
-bear_count = 4
+grass_count = 0
+rabbit_count = 0
+wolf_count = 0
+bear_count = 0
 grass_spread = 2
 rabbit_spread = 2
 wolf_spread = 2
@@ -59,15 +59,19 @@ the_map.add_multiple_objects_around(wolf_x, wolf_y, wolf_spread, wolfs)
 the_map.add_multiple_objects_around(bear_x, bear_y, bear_spread, bears)
 # debug special
 my_test_wolf = Wolf(90, 90, 90, 90, 'w', 1, 1, 7, 1, 2, 5, 5, False, 12, 5, Gender.MALE)
-my_test_grass = Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10)
+my_test_grass1 = Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10)
+my_test_grass2 = Grass(3, 37, 3, 40, 'g', 0, 0, 1, 1, 2, 1, 1, True, 10)
 my_test_bear = Bear(100, 100, 100, 100, 'b', 2, 2, 3, 1, 3, 5, 5, False, 8, 10, Gender.MALE)
 my_test_rabbit = Rabbit(70, 70, 70, 70, 'r', 1, 1, 5, 1, 4, 4, 4, False, 10, 4, Gender.MALE)
-# my_test_wolf.set_target(4, 2)
+
+my_test_bear.set_target(3, 12)
+# my_test_wolf.set_target(13, 2)
+the_map.add_obj_to_pos(my_test_wolf, 0, 10)
+# the_map.add_obj_to_pos(my_test_grass1, 5, 2)
+# the_map.add_obj_to_pos(my_test_grass2, 11, 2)
 # my_test_rabbit.set_target(3, 0)
-# the_map.add_obj_to_pos(my_test_rabbit, 1, 1)
-# the_map.add_obj_to_pos(my_test_wolf, 3, 3)
-# the_map.add_obj_to_pos(my_test_bear, 4, 2)
-# the_map.add_obj_to_pos(my_test_grass, 4, 2)
+# the_map.add_obj_to_pos(my_test_rabbit, 4, 3)
+the_map.add_obj_to_pos(my_test_bear, 4, 10)
 print('Map is ready...')
 print('Initing UI...')
 root = tk.Tk()
@@ -79,7 +83,7 @@ print('UI is ready...')
 print('Starting UI...')
 ui_module.display()
 print('Creating engine...')
-engine: Engine = Engine(the_map)
+engine: Engine = Engine(the_map, 0.9)
 print('Engine is ready...')
 print('Starting app...')
 for i in range(10, 0, -1):

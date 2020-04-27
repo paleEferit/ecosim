@@ -620,9 +620,20 @@ class Engine:
     def get_failed_str_spread() -> int:
         return 2
 
-    def __init__(self, eco_map: EcoMap):
+    def get_fed_ratio(self) -> float:
+        return self._fed_ratio
+
+    def is_well_fed(self, obj: EcoObject) -> bool:
+        threshold = round(obj.get_max_energy()*self.get_fed_ratio())
+        energy = obj.get_energy_value()
+        return energy >= threshold
+
+    def __init__(self, eco_map: EcoMap, fed_ratio: float):
         self._eco_map = eco_map
         self._sub_turn_actions_taken: List[int] = []
+        if fed_ratio <= 0 or fed_ratio >= 1:
+            raise ValueError('fed ration should be in (0;1), excluding 0 and 1')
+        self._fed_ratio = fed_ratio
         # debug data
         self._denied_breed_animals_total = 0
         self._denied_breed_animals_subturn = 0
@@ -676,6 +687,7 @@ class Engine:
         else:
             return False
 
+    # todo make a breeding limit once per full turn
     def can_breed(self, parent_1: EcoObject, parent_2: EcoObject) -> bool:
         if not self.can_act_on_subturn(parent_1) or not self.can_act_on_subturn(parent_2):
             return False
@@ -1117,6 +1129,7 @@ class Plant(EcoObject):
                           sight: int) -> Plant:
         pass
 
+    # todo plants should not have above speed 1
     def get_breed(self, obj: Plant) -> List[Plant]:
         res = []
         if obj.get_name().__eq__(self.get_name()):

@@ -177,6 +177,7 @@ class Rabbit(Animal):
         res = isinstance(obj, Plant)
         return res
 
+    # todo: consider breeding once per full turn, being cornered, and being full on energy, fix barrier jumping
     def act_on(self, object_list: List[EcoObject], engine: Engine):
         # reseting target
         if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
@@ -417,6 +418,7 @@ class Wolf(Animal):
         res = isinstance(obj, Animal) and not obj.get_name().__eq__(self.get_name()) and not obj.__eq__(self)
         return res
 
+    # todo: consider breeding once per full turn
     def act_on(self, object_list: List[EcoObject], engine: Engine):
         # reseting target
         if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
@@ -473,10 +475,24 @@ class Wolf(Animal):
                 y_vec_sum += tmp_y_v
             target_x: int = max(min(x_start - self.get_speed_max() * round(x_vec_sum / count), max_x), min_x)
             target_y: int = max(min(y_start - self.get_speed_max() * round(y_vec_sum / count), max_y), min_y)
+            # updating target to not be cornered
+            hostile_vector_x = round(x_vec_sum / count)
+            hostile_vector_y = round(y_vec_sum / count)
+            if (x_start == min_x or x_start == max_x) or (y_start == min_y or y_start == max_y) and (target_x == x_start) and (target_y == y_start):
+                if abs(hostile_vector_x) > abs(hostile_vector_y):
+                    if hostile_vector_y > 0:
+                        target_y = max_y
+                    else:
+                        target_y = min_y
+                else:
+                    if hostile_vector_x > 0:
+                        target_x = max_x
+                    else:
+                        target_x = min_x
             self.set_target(target_x, target_y)
 
         #  feed sequence
-        if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0:
+        if (not self.can_breed() or len(acceptable) == 0) and not self.is_target_set() and len(food) > 0 and not engine.is_well_fed(self):
             action_is_possible_flag = False
             max_food_energy = food[0].get_energy_value()
             max_energy_candidate = food[0]
@@ -576,10 +592,20 @@ class Wolf(Animal):
             elif engine.can_step(self, vector_x, vector_y):
                 engine.step(self, vector_x, vector_y)
             elif (vector_x != 0) or (vector_y != 0):
-                ratio = self.get_dist() / math.sqrt(vector_x ** 2 + vector_y ** 2)
-                vector_x = math.floor(vector_x * ratio)
-                vector_y = math.floor(vector_y * ratio)
-                engine.jump(self, vector_x, vector_y)
+                dist_counter = self.get_dist()
+                jump_flag = False
+                while dist_counter > 1:
+                    ratio = dist_counter / math.sqrt(vector_x ** 2 + vector_y ** 2)
+                    vector_x = math.floor(vector_x * ratio)
+                    vector_y = math.floor(vector_y * ratio)
+                    if engine.can_jump(self, vector_x, vector_y):
+                        jump_flag = True
+                        break
+                    dist_counter -= 1
+                if jump_flag:
+                    engine.jump(self, vector_x, vector_y)
+                else:
+                    self.reset_target()
 
 
 class Bear(Animal):
@@ -656,9 +682,10 @@ class Bear(Animal):
         return 'bear'
 
     def can_eat(self, obj: EcoObject) -> bool:
-        res = (not obj.get_name().__eq__(self.get_name())) or self.get_starving_plank() >= self.get_energy_value()
+        res = (not isinstance(obj, Bear)) or (self.get_starving_plank() >= self.get_energy_value() and obj.get_gender() == self.get_gender())
         return res
 
+    # todo: consider breeding once per full turn, being cornered, and being full on energy, fix barrier jumping
     def act_on(self, object_list: List[EcoObject], engine: Engine):
         # reseting target
         if (self.is_target_set()) and (self.get_x() == self.get_target_x()) and (
