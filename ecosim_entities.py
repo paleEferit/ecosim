@@ -1022,9 +1022,9 @@ class Engine:
         keys = the_map.get_all_obj_keys()
         count: int = 0
         # debug
-        print(keys)
+        # print(keys)
         for k in keys:
-            print('id %i' % k)
+            # print('id %i' % k)
             if the_map.has_object_id(k):
                 obj = the_map.get_eco_obj_by_id(k)
                 if obj.get_speed() > 0:
@@ -1042,7 +1042,7 @@ class Engine:
 
         acted = self.clear_acted_list()
         #debug
-        print('===TOTAL ACTED %i' % acted)
+        #print('===TOTAL ACTED %i' % acted)
         return count
 
     def full_turn(self) -> int:
@@ -1066,12 +1066,12 @@ class Engine:
         self.clear_breed_list()
 
         #debug
-        print('===TOTAL REMOVED %i' % removed_count)
-        print('=denied animals total %i' % self._denied_breed_animals_total)
-        print('=denied animals subturn %i' % self._denied_breed_animals_subturn)
+        #print('===TOTAL REMOVED %i' % removed_count)
+        #print('=denied animals total %i' % self._denied_breed_animals_total)
+        #print('=denied animals subturn %i' % self._denied_breed_animals_subturn)
         self._denied_breed_animals_subturn = 0
-        print('=denied plants total %i' % self._denied_breed_plants_total)
-        print('=denied plants subturn %i' % self._denied_breed_plants_subturn)
+        #print('=denied plants total %i' % self._denied_breed_plants_total)
+        #print('=denied plants subturn %i' % self._denied_breed_plants_subturn)
         self._denied_breed_plants_subturn = 0
 
 
@@ -1194,10 +1194,7 @@ class Plant(EcoObject):
                     energy_limit)
                 energy_max_val = max(EcoObject.get_min_possible_energy(), energy_max_val)
 
-                speed_val: int = min(
-                    round((self.get_speed_max() + obj.get_speed_max()) / 2) + random.randint(mutation_min,
-                                                                                             mutation_max), speed_limit)
-                speed_val = max(EcoObject.get_min_possible_speed(), speed_val)
+                speed_val: int = 1
 
                 life_max_val: int = min(
                     round((self.get_max_life() + obj.get_max_life()) / 2) + random.randint(mutation_min, mutation_max),
