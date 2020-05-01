@@ -61,6 +61,7 @@ class GraphicPrintUI(UIDisplay):
 
     def clear_all(self) -> NoReturn:
         tmp_cnv = self._get_canvas()
+        tmp_cnv.delete("all")
         bgc = '#%02x%02x%02x' % self._bg_color
         fgc = '#%02x%02x%02x' % self._fg_color
         tmp_cnv.create_rectangle(0, 0, self.get_width(), self.get_height(), outline=bgc, fill=bgc, width=2)
@@ -99,6 +100,9 @@ class GraphicPrintUI(UIDisplay):
     def update_display(self) -> NoReturn:
         self.clear_all()
         self.display()
+        tmp_cnv = self._get_canvas()
+        tmp_cnv.update_idletasks()
+        tmp_cnv.update()
 
     def init(self) -> NoReturn:
         print('init is not implemented yet')
