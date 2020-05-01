@@ -127,7 +127,7 @@ class VisualApp(tk.Frame):
             self.btn_stop_loops.configure(state=tk.DISABLED)
 
     def start_auto_loops(self) -> NoReturn:
-        my_thread = Thread(target=self.start_loops_function, daemon=True)
+        my_thread = Thread(target=self.start_loops_function, daemon=False)
         my_thread.start()
 
     def stop_auto_loops(self) -> NoReturn:
@@ -157,10 +157,10 @@ class VisualApp(tk.Frame):
         self.set_loop_flag(True)
         threads: List[Thread] = []
         threads.append(
-            Thread(target=self.draw_loop, daemon=True,
+            Thread(target=self.draw_loop, daemon=False,
                    args=[self._loop_map_lock, self._loop_stop_event, self.get_draw_period()]))
         threads.append(
-            Thread(target=self.engine_loop, daemon=True,
+            Thread(target=self.engine_loop, daemon=False,
                    args=[self._loop_map_lock, self._loop_stop_event, self.get_action_period()]))
         threads[0].start()
         threads[1].start()
