@@ -1048,6 +1048,7 @@ class Engine:
     def full_turn(self) -> int:
         count = 0
         while self.sub_turn() > 0:
+            self.clear_acted_list()
             count += 1
         self.update()
         return count

@@ -77,7 +77,8 @@ my_test_rabbit = Rabbit(70, 70, 70, 70, 'r', 1, 1, 5, 1, 4, 4, 4, False, 10, 4, 
 print('Map is ready...')
 print('Initing UI...')
 root = tk.Tk()
-app = VisualApp(engine=None, ui_dis=None, canvas_width=resolution_width, canvas_height=resolution_height, master=root)
+app = VisualApp(engine=None, ui_dis=None, canvas_width=resolution_width, canvas_height=resolution_height,
+                fps=30, aps=15, master=root)
 ui_module: UIDisplay = GraphicPrintUI(the_map, resolution_width, resolution_height, app.get_sp_canvas(),
                                       (255, 255, 255),
                                       (0, 0, 0))
