@@ -59,11 +59,6 @@ class VisualApp(tk.Frame):
         self.btn_subturn_full.pack(side="top")
 
         # --- auto loops
-        # button start loops
-        self.btn_start_loops = tk.Button(self)
-        self.btn_start_loops["text"] = "Start loops"
-        self.btn_start_loops["command"] = self.start_auto_loops
-        self.btn_start_loops.pack(side="top")
 
         # button start loops
         self.btn_start_loops = tk.Button(self)
@@ -143,7 +138,7 @@ class VisualApp(tk.Frame):
             r_lock.acquire()
             self._ui_display.update_display()
             # debug
-            print('-graphics')
+            # print('-graphics')
             r_lock.release()
 
     def engine_loop(self, r_lock: RLock, stop_event: Event, act_period: float) -> NoReturn:
@@ -155,7 +150,7 @@ class VisualApp(tk.Frame):
             if tmp_val <= 0:
                 the_engine.update()
             # debug
-            print('-engine')
+            # print('-engine')
             r_lock.release()
 
     def start_loops_function(self):
