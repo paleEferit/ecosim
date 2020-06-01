@@ -21,6 +21,7 @@ class GraphicPrintUI(UIDisplay):
         self._width = width
         self._height = height
         self._canvas = canvas
+
         self._bg_color = bg_color
         self._fg_color = fg_color
         self.clear_all()
