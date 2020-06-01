@@ -13,8 +13,8 @@ class VisualApp(tk.Frame):
     def __init__(self, engine: Engine, ui_dis: UIDisplay, canvas_width: int, canvas_height: int, fps: int, aps: int, master=None):
         # basic stuff
         super().__init__(master)
+        self.grid()
         self.master = master
-        self.pack()
         # setting fields
         self._ui_display = ui_dis
         self._engine = engine
@@ -27,36 +27,30 @@ class VisualApp(tk.Frame):
         self._draw_period = 1.0/fps
         self._action_period = 1.0/aps
         self._loop_thread: Thread = None
-        # canvas
-
-        self._blank = VisualApp.get_blank_image(width=self._canvas_width, height=self._canvas_height, r=255, g=255, b=0)
-        self._my_canvas = tk.Canvas(self.master, width=self._canvas_width, height=self._canvas_height)
-        self._my_canvas.pack(side="top")
-        self._my_canvas.create_image(0, 0, image=self._blank, anchor=tk.NW)
-
-        # button update graphics
-        self.btn_graphics_update = tk.Button(self)
-        self.btn_graphics_update["text"] = "Update graphics"
-        self.btn_graphics_update["command"] = self.update_graphics
-        self.btn_graphics_update.pack(side="top")
-
-        # button clear graphics
-        self.btn_graphics_clear = tk.Button(self)
-        self.btn_graphics_clear["text"] = "Clear canvas"
-        self.btn_graphics_clear["command"] = self.clear_graphics
-        self.btn_graphics_clear.pack(side="top")
 
         # button full turn
         self.btn_turn_full = tk.Button(self)
         self.btn_turn_full["text"] = "Full turn"
         self.btn_turn_full["command"] = self.turn_engine
-        self.btn_turn_full.pack(side="top")
+        self.btn_turn_full.grid(row=0, column=0)
 
         # button subturn
         self.btn_subturn_full = tk.Button(self)
         self.btn_subturn_full["text"] = "Sub turn"
         self.btn_subturn_full["command"] = self.sub_turn_engine
-        self.btn_subturn_full.pack(side="top")
+        self.btn_subturn_full.grid(row=0, column=1)
+
+        # button update graphics
+        self.btn_graphics_update = tk.Button(self)
+        self.btn_graphics_update["text"] = "Update graphics"
+        self.btn_graphics_update["command"] = self.update_graphics
+        self.btn_graphics_update.grid(row=0, column=2)
+
+        # button clear graphics
+        self.btn_graphics_clear = tk.Button(self)
+        self.btn_graphics_clear["text"] = "Clear canvas"
+        self.btn_graphics_clear["command"] = self.clear_graphics
+        self.btn_graphics_clear.grid(row=0, column=3)
 
         # --- auto loops
 
@@ -64,18 +58,24 @@ class VisualApp(tk.Frame):
         self.btn_start_loops = tk.Button(self)
         self.btn_start_loops["text"] = "Start loops"
         self.btn_start_loops["command"] = self.start_auto_loops
-        self.btn_start_loops.pack(side="top")
+        self.btn_start_loops.grid(row=1, column=0, columnspan=2)
 
         # button stop loops
         self.btn_stop_loops = tk.Button(self)
         self.btn_stop_loops["text"] = "Stop loops"
         self.btn_stop_loops["command"] = self.stop_auto_loops
-        self.btn_stop_loops.pack(side="top")
+        self.btn_stop_loops.grid(row=1, column=2, columnspan=2)
 
         # ==quit button
-        self.btn_quit = tk.Button(self, text="QUIT", fg="red",
-                              command=self.master.destroy)
-        self.btn_quit.pack(side="bottom")
+        self.btn_quit = tk.Button(self, text="QUIT", fg="red", command=self.master.destroy)
+        self.btn_quit.grid(row=2, column=1, columnspan=2)
+
+        # canvas
+
+        self._blank = VisualApp.get_blank_image(width=self._canvas_width, height=self._canvas_height, r=255, g=255, b=0)
+        self._my_canvas = tk.Canvas(self.master, width=self._canvas_width, height=self._canvas_height)
+        self._my_canvas.grid(row=3, column=0)
+        self._my_canvas.create_image(0, 0, image=self._blank, anchor=tk.NW)
 
         # setting buttons
         self.set_stop_loops_button_state(self.get_loop_flag())
